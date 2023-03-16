@@ -11,19 +11,20 @@
     - String ip
     - int port 
     
-    + getIntfo()
+    + getInfo()
     + getAdrr()
     * getKey()
   } 
   
   class Key {
-    - Key id
-    - String name
-    - int number 
-    
-    +void getName()
-    +void getNumber()
-    +String toString()
+    - Array<KEY_SIZE> key
+  }
+  
+  class Routing{
+  
+  }
+  
+  class stored {
   }
   
   enum Message {
