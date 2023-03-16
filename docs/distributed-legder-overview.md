@@ -13,7 +13,7 @@
     
     + getIntfo()
     + getAdrr()
-    - getKey()
+    * getKey()
   } 
   
   class Key {
@@ -25,5 +25,26 @@
     +void getNumber()
     +String toString()
   }
+  
+  enum Message {
+    - PING
+    - STORE
+    - FIND_NODE
+    - FIND_VALUE
+  }
+  
+  class Server {
+    - Request=Call
+    - Response
+  }
+  
+  class Client { 
+    - Request
+    - Response
+  }
+  
+  
+   
 @enduml
 ```
+
