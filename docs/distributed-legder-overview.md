@@ -1,8 +1,8 @@
 # Distributed Legder
 
+Requisitos e estrutura da rede distribuida
 
-
-# diagram
+## Diagrama de classes da rede distribuida
 
 ```plantuml
 @startuml
@@ -20,8 +20,18 @@
     - Array<KEY_SIZE> key
   }
   
-  class Routing{
+  class Buckets{
+    - Array<Node> nodes 
+    - int size
+  }
   
+  class RoutingTable{
+   - Node currentNode
+   - Array<Bucket> kbuckets
+   
+   + getNodeById()
+   + 
+   
   }
   
   class stored {
@@ -44,6 +54,8 @@
     - Response
   }
   
+  Node -> Key
+  RoutingTable -> Buckets
   
    
 @enduml
