@@ -2,18 +2,29 @@
 
 Requisitos e estrutura da rede distribuida
 
-## Diagrama de classes da rede distribuida
+### BootStrap Nodes
+Entrypoint to the network
+
+
+
+### Diagrama de classes da rede distribuida
 
 ```plantuml
 @startuml
-  class Node {
+  class kademliaDTH{
+    
+  }
+  class Node implements ReputationAndThruth {
     - Key id
     - String ip
     - int port 
+    - DateTime updatedAt
     
     + getInfo()
     + getAdrr()
+    + getAge()
     * getKey()
+    
   } 
   
   class Key {
@@ -23,39 +34,44 @@ Requisitos e estrutura da rede distribuida
   class Buckets{
     - Array<Node> nodes 
     - int size
+    
+    + findNodeByKey(Key key)
   }
   
   class RoutingTable{
    - Node currentNode
    - Array<Bucket> kbuckets
    
-   + getNodeById()
-   + 
+   + getNodeBucketGroup(key)
+   + addNode(Key)
+   + removeNode(Key)
+   + updateNode(Key)
    
   }
   
-  class stored {
+  enum Messages {
+    - PING()
+    - STORE(String, String)
+    - FIND_NODE(Key)
+    - FIND_VALUE(String)
   }
   
-  enum Message {
-    - PING
-    - STORE
-    - FIND_NODE
-    - FIND_VALUE
+  class Server{
+    - Node currentNode
+    - handleRequest()
   }
   
-  class Server {
-    - Request=Call
-    - Response
+  class Client{
+    makeRequest(Node, Message)
   }
   
-  class Client { 
-    - Request
-    - Response
+  interface ReputationAndThruth{
+  - Int successsullyInteration
+  - Int failedIntertion
+  
+  + Int distance(Key, Key)  
   }
   
-  Node -> Key
-  RoutingTable -> Buckets
   
    
 @enduml
