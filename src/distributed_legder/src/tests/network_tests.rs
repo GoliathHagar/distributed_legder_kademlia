@@ -1,5 +1,8 @@
+use crate::dht::kademlia::KademliaDHT;
+use crate::network::node::Node;
+use crate::network::udp_communitations::{Client, Server};
 
 #[test]
-fn it_works() {
-    assert!(true);
+fn two_way_handshake() {
+   assert!(true)
 }
