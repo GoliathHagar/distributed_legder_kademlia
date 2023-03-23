@@ -5,4 +5,4 @@ pub const KEY_SIZE: usize = 32;
 pub const UDP_STREAMING_BUFFER_SIZE :usize = 8192 ;
 
 // response timeout 5000ms
-const REQUEST_TIMEOUT: u64 = 5000;
+pub const RESPONSE_TIMEOUT: u64 = 8000;
