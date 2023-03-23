@@ -32,7 +32,6 @@ impl Client{
             eprintln!("[FAILED] Client unable to send request")
         }
 
-
         //request timeout remove
         let rpc = self.rpc.clone();
         let token = payload.token_id.clone();

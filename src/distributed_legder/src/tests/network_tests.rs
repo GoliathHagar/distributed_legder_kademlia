@@ -3,7 +3,6 @@ use crate::dht::kademlia::KademliaDHT;
 use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::node::Node;
-use crate::network::rpc_socket::{Client, Server};
 use crate::network::server::Server;
 
 #[test]

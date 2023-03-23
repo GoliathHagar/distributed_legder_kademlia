@@ -52,7 +52,7 @@ impl Server{
                     Ok(d) =>   d,
                     Err(_) =>  {
                         error!("Unable to decode string payload ");
-                        debug!("Payload unknown {}", payload);
+                        debug!("Payload unknown [{}]", payload);
                         continue;
                     }
                 };

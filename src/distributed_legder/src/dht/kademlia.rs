@@ -18,8 +18,6 @@ pub struct KademliaDHT{
 
 impl KademliaDHT{
     pub fn new(node: Node, bootstrap_node: Option<Node>) -> KademliaDHT {
-        env_logger::init();
-
         let routing = RoutingTable; //Todo: Routing Table
         let rpc = RpcSocket::new(node.clone());
 
