@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use crate::dht::kademlia::KademliaDHT;
+use crate::dht::rpc::Rpc;
 use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::node::Node;
@@ -12,14 +13,14 @@ fn two_way_handshake() {
         token_id: "test".to_string(),
         source: "127.0.0.1:1234".to_string(),
         destination: "127.0.0.1:8000".to_string(),
-        data: "this is a test".to_string()
+        data: Rpc::Ping
     };
     let kill = &Datagram {
         data_type: DatagramType::KILL,
         token_id: "test".to_string(),
         source: "127.0.0.1:1234".to_string(),
         destination: "127.0.0.1:8000".to_string(),
-        data: "this is a test".to_string()
+        data: Rpc::Ping
     };
 
     let kill2 = &Datagram {
@@ -27,8 +28,10 @@ fn two_way_handshake() {
         token_id: "test".to_string(),
         source: "127.0.0.1:8000".to_string(),
         destination: "127.0.0.1:1234".to_string(),
-        data: "this is a test".to_string()
+        data: Rpc::Ping
     };
+
+    println!("{:?}",data);
 
     let current_node = Node::new("127.0.0.1".to_string(),1234);
     let remote_node = Node::new("127.0.0.1".to_string(),8000);
@@ -51,7 +54,7 @@ fn two_way_handshake() {
     threa1.join().expect("thead 1 dead");
     threa2.join().expect("thread 2 dead");
 
-    assert_eq!(rec.data, data.data);
+    assert_eq!(rec.data, Rpc::Pong);
     assert_eq!(rec.token_id, data.token_id);
     assert_eq!(rec.source, data.destination);
     assert_eq!(rec.destination, data.source);
@@ -65,14 +68,14 @@ fn test_no_response(){
         token_id: "test".to_string(),
         source: "127.0.0.1:8080".to_string(),
         destination: "127.0.0.1:12345".to_string(),
-        data: "this is a test".to_string()
+        data: Rpc::Ping
     };
     let kill = &Datagram {
         data_type: DatagramType::KILL,
         token_id: "test".to_string(),
         source: "127.0.0.1:8080".to_string(),
         destination: "127.0.0.1:8080".to_string(),
-        data: "this is a test".to_string()
+        data: Rpc::Ping
     };
 
     let current_node = Node::new("127.0.0.1".to_string(),8080);

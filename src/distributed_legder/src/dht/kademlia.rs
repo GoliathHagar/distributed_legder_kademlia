@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
-use log::info;
+use log::{debug, info};
 use crate::dht::routing_table::RoutingTable;
-use crate::network::datagram::Datagram;
+use crate::dht::rpc::Rpc;
+use crate::dht::rpc::Rpc::Pong;
+use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::node::Node;
 use crate::network::rpc_socket::RpcSocket;
 use crate::network::server::Server;
@@ -32,18 +34,51 @@ impl KademliaDHT{
 
     }
 
-    pub fn start_server(self) -> JoinHandle<()> {
+    pub fn init(self) -> JoinHandle<()> {
+
+        self.start_server()
+    }
+
+    fn start_server(self) -> JoinHandle<()> {
         let server = Server::new(Arc::new(self));
         let server_thread = server.start_service();
 
         server_thread
 
     }
+
+
     pub fn handle_request(app: Arc<KademliaDHT>, req: Datagram) -> Datagram {
 
-        println!("node {:?}", app.node);
+        let test : Datagram = req.clone();
+        debug!("node {:?}", app.node);
 
-        req
+        let resp : Datagram = match req.data {
+            Rpc::Ping =>{
+                Datagram{
+                    token_id: req.token_id,
+                    source: req.source,
+                    destination: req.destination,
+                    data_type : DatagramType::RESPONSE,
+                    data: Pong
+                }
+            }
+            Rpc::FindNode(k) =>{
+                test
+            }
+            Rpc::FindValue(k) =>{
+                test
+            }
+            Rpc::Store(k,v) =>{
+                test
+            }
+
+            _ => { test}
+        };
+
+
+
+        resp
     }
 
 }

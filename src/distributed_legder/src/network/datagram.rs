@@ -1,8 +1,9 @@
 use crate::network::key::Key;
 use serde::{Serialize,Deserialize};
+use crate::dht::rpc::Rpc;
 
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub enum DatagramType{
     REQUEST,
     RESPONSE,
@@ -10,12 +11,12 @@ pub enum DatagramType{
 }
 
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct Datagram {
     pub data_type : DatagramType,
     pub token_id: String,
     pub source : String,
     pub destination: String,
-    pub data:String
+    pub data: Rpc
 }
 

@@ -24,7 +24,6 @@ impl Server{
 
         let app = self.app.clone();
         thread::spawn(move || {
-            ;
             let mut buffer =  [0u8; UDP_STREAMING_BUFFER_SIZE];
 
             loop {
@@ -36,6 +35,8 @@ impl Server{
                         continue;
                     }
                 };
+
+                debug!("Source address {}", src_addr);
 
                 let payload =
                     String::from(match str::from_utf8(&buffer[..size]){

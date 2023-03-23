@@ -9,7 +9,6 @@ use crate::network::rpc_socket::RpcSocket;
     pub rpc: Arc<RpcSocket>,
 }
 
-
 impl Client{
     pub fn new(rpc : Arc<RpcSocket>) -> Client {
         Self{
