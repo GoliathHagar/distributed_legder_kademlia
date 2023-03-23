@@ -1,8 +1,10 @@
 use std::sync::Arc;
 use crate::dht::kademlia::KademliaDHT;
+use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::node::Node;
-use crate::network::udp_communitations::{Client, Server};
+use crate::network::rpc_socket::{Client, Server};
+use crate::network::server::Server;
 
 #[test]
 fn two_way_handshake() {

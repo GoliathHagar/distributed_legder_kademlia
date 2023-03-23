@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
+use log::info;
 use crate::dht::routing_table::RoutingTable;
 use crate::network::datagram::Datagram;
 use crate::network::node::Node;
-use crate::network::udp_communitations::{RpcSocket, Server};
+use crate::network::rpc_socket::RpcSocket;
+use crate::network::server::Server;
 
 #[derive(Clone, Debug)]
 pub struct KademliaDHT{
@@ -16,9 +18,12 @@ pub struct KademliaDHT{
 
 impl KademliaDHT{
     pub fn new(node: Node, bootstrap_node: Option<Node>) -> KademliaDHT {
+        env_logger::init();
 
         let routing = RoutingTable; //Todo: Routing Table
         let rpc = RpcSocket::new(node.clone());
+
+        info!("Node id [{:?}] created read to start", node.id);
 
         Self{
             routing_table: Arc::new(Mutex::new(routing)),
