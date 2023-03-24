@@ -31,7 +31,7 @@ impl Server{
                     .recv_from(&mut buffer){
                     Ok((sz, src)) => (sz, src),
                     Err(e) => {
-                        error!("Failed to receive data from {}",e.to_string());
+                        error!("Failed to receive data from [{}]",e.to_string());
                         continue;
                     }
                 };
@@ -53,7 +53,7 @@ impl Server{
                     Ok(d) =>   d,
                     Err(_) =>  {
                         error!("Unable to decode string payload ");
-                        debug!("Payload unknown [{}]", payload);
+                        debug!("Payload unknown [{}]", payload.trim_end());
                         continue;
                     }
                 };
@@ -68,7 +68,7 @@ impl Server{
                     continue;
                 }
 
-                debug!("[Payload] {:?}", data);
+                debug!("Received payload [{:?}]", data);
 
                 data.source= src_addr.to_string();
 
@@ -98,7 +98,7 @@ impl Server{
 
     fn request_handler( app: Arc<KademliaDHT>,  payload: Datagram, ){
         thread::spawn(move || {
-             match KademliaDHT::handle_request(app.clone(),payload){
+             match KademliaDHT::handle_request(app.clone(),payload.clone()){
                 Some(payload) =>{
                     Server::reply(app.service.clone(),&Datagram {
                         token_id : payload.token_id,
@@ -109,7 +109,7 @@ impl Server{
                     });
                 },
                  None => {
-                     error!("Unable to generate a response");
+                     error!("Unable to generate a response for [{:?}]", payload.data);
                  }
             };
 
