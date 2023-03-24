@@ -20,7 +20,7 @@ pub struct KademliaDHT{
 
 impl KademliaDHT{
     pub fn new(node: Node, bootstrap_node: Option<Node>) -> KademliaDHT {
-        let routing = RoutingTable; //Todo: Routing Table
+        let routing = RoutingTable::new(node.clone(), bootstrap_node); //Todo: Routing Table
         let rpc = RpcSocket::new(node.clone());
 
         info!("Node id [{:?}] created read to start", node.id);
@@ -48,37 +48,57 @@ impl KademliaDHT{
     }
 
 
-    pub fn handle_request(app: Arc<KademliaDHT>, req: Datagram) -> Datagram {
+    pub fn handle_request(app: Arc<KademliaDHT>, req: Datagram) -> Option<Datagram> {
 
-        let test : Datagram = req.clone();
+        let payload : Datagram = req.clone();
         debug!("node {:?}", app.node);
 
-        let resp : Datagram = match req.data {
+        let resp: Option<Datagram> = match req.data {
             Rpc::Ping =>{
-                Datagram{
-                    token_id: req.token_id,
-                    source: req.source,
-                    destination: req.destination,
-                    data_type : DatagramType::RESPONSE,
-                    data: Pong
-                }
+                app.ping(payload)
             }
             Rpc::FindNode(k) =>{
-                test
+                app.find_node(payload)
             }
             Rpc::FindValue(k) =>{
-                test
+                app.find_value(payload)
             }
             Rpc::Store(k,v) =>{
-                test
+                app.store(payload)
             }
-
-            _ => { test}
+            _ => { None } //reply payload ignored
         };
 
-
-
         resp
+    }
+
+    pub fn ping(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
+        //todo: complete GOLIATHHAGAR
+
+        Some(
+            Datagram{
+                token_id: payload.token_id,
+                source: payload.source,
+                destination: payload.destination,
+                data_type : DatagramType::RESPONSE,
+                data: Pong
+            }
+        )
+    }
+
+    pub(self) fn find_node(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
+        //Todo: find_node
+        Some(payload)
+    }
+
+    pub(self) fn find_value(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
+        //Todo: find_value
+        Some(payload)
+    }
+
+    pub(self) fn store(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
+        //Todo: store
+        Some(payload)
     }
 
 }

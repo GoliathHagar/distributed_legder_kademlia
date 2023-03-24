@@ -98,15 +98,20 @@ impl Server{
 
     fn request_handler( app: Arc<KademliaDHT>,  payload: Datagram, ){
         thread::spawn(move || {
-            let response : Datagram = KademliaDHT::handle_request(app.clone(),payload);
-
-            Server::reply(app.service.clone(),&Datagram {
-                token_id : response.token_id,
-                data_type: DatagramType::RESPONSE,
-                source:response.destination,
-                destination: response.source,
-                data: response.data
-            });
+             match KademliaDHT::handle_request(app.clone(),payload){
+                Some(payload) =>{
+                    Server::reply(app.service.clone(),&Datagram {
+                        token_id : payload.token_id,
+                        data_type: DatagramType::RESPONSE,
+                        source:payload.destination,
+                        destination: payload.source,
+                        data: payload.data
+                    });
+                },
+                 None => {
+                     error!("Unable to generate a response");
+                 }
+            };
 
         });
 
