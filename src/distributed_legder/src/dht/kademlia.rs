@@ -5,6 +5,7 @@ use log::{debug, info};
 use crate::dht::routing_table::RoutingTable;
 use crate::dht::rpc::Rpc;
 use crate::dht::rpc::Rpc::Pong;
+use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::node::Node;
 use crate::network::rpc_socket::RpcSocket;
@@ -38,6 +39,7 @@ impl KademliaDHT{
 
         self.start_server()
     }
+
 
     fn start_server(self) -> JoinHandle<()> {
         let server = Server::new(Arc::new(self));

@@ -1,11 +1,13 @@
 use std::fmt::{Debug, Error, Formatter};
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 use crate::constants::fixed_sizes::KEY_SIZE;
 use crate::constants::utils::calculate_sha256;
 
-
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct Key( pub [u8; KEY_SIZE] );
+pub struct Key(
+    #[serde(with = "hex_serde")]
+    pub [u8; KEY_SIZE]
+);
 
 impl Key {
     pub fn new(input: String) -> Self {

@@ -4,6 +4,7 @@ use std::thread::JoinHandle;
 use log::{debug, error, info, warn};
 use crate::constants::fixed_sizes::UDP_STREAMING_BUFFER_SIZE;
 use crate::dht::kademlia::KademliaDHT;
+use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::rpc_socket::RpcSocket;
 
@@ -91,9 +92,9 @@ impl Server{
         let encoded = serde_json::to_string(msg)
             .map_err(|_| error!("Unable to serialize message")).unwrap();
 
-        rpc.socket
-            .send_to(&encoded.as_bytes(), &msg.destination)
-            .map_err(|_|" Error while sending message to specified address").unwrap();
+       if let Err(_) =  rpc.socket.send_to(&encoded.as_bytes(), &msg.destination) {
+          error!(" Error while sending message to specified address")
+       };
     }
 
     fn request_handler( app: Arc<KademliaDHT>,  payload: Datagram, ){
@@ -122,7 +123,7 @@ impl Server{
             let app = self.app.clone();
             let mut await_response = app.service.await_response
                 .lock()
-                .map_err(|_| error!("Failed to acquire lock on AwaitResponse")).unwrap();
+                .map_err(|_| error!("Failed to acquire lock")).unwrap();
 
             let token = payload.token_id.clone();
 
@@ -140,5 +141,7 @@ impl Server{
         });
 
     }
+
+
 
 }

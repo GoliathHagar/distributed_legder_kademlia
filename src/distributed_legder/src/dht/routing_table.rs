@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex};
 use crate::network::node::Node;
 use crate::constants::fixed_sizes::{K_BUCKET_SIZE, KEY_SIZE, N_BUCKETS};
 
@@ -10,7 +11,7 @@ pub struct Bucket{
 #[derive(Debug)]
 pub struct RoutingTable{
     pub node: Node,
-    pub buckets: Vec<Bucket>
+    pub buckets: Arc<Mutex<Vec<Bucket>>>
 }
 
 /*
@@ -36,8 +37,8 @@ impl RoutingTable{
         }
 
         let rt = Self{
-            node,
-            buckets
+            buckets: Arc::new(Mutex::new(buckets)),
+            node
         };
 
         rt

@@ -3,13 +3,14 @@ use std::net::UdpSocket;
 use std::sync::{Arc, mpsc, Mutex};
 use log::error;
 use crate::network::datagram::Datagram;
+use crate::network::key::Key;
 use crate::network::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct RpcSocket{
     pub node : Arc<Node>,
     pub socket: Arc<UdpSocket>,
-    pub await_response: Arc<Mutex<HashMap<String, mpsc::Sender<Option<Datagram>>>>>,
+    pub await_response: Arc<Mutex<HashMap<Key, mpsc::Sender<Option<Datagram>>>>>,
 }
 
 impl RpcSocket {

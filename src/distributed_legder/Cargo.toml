@@ -9,7 +9,7 @@ authors = [] # TODO: add authors
 [dependencies]
 serde = { version = "1.0.158", features = ["derive"] }
 serde_json = "1.0.94"
-#hex = "0.4.3"
+hex-serde = "0.1.0"
 sha2 = "0.10.6"
 
 
