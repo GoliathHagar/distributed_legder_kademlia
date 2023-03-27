@@ -4,7 +4,6 @@ use std::thread::JoinHandle;
 use log::{debug, error, info, warn};
 use crate::constants::fixed_sizes::UDP_STREAMING_BUFFER_SIZE;
 use crate::dht::kademlia::KademliaDHT;
-use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::rpc_socket::RpcSocket;
 
@@ -28,8 +27,8 @@ impl Server{
             let mut buffer =  [0u8; UDP_STREAMING_BUFFER_SIZE];
 
             loop {
-                let (size , src_addr) = match app.service.socket
-                    .recv_from(&mut buffer){
+                let (size, src_addr) = match app.service.socket
+                    .recv_from(&mut buffer) {
                     Ok((sz, src)) => (sz, src),
                     Err(e) => {
                         error!("Failed to receive data from [{}]",e.to_string());
@@ -40,7 +39,7 @@ impl Server{
                 debug!("Source address {}", src_addr);
 
                 let payload =
-                    String::from(match str::from_utf8(&buffer[..size]){
+                    String::from(match str::from_utf8(&buffer[..size]) {
                         Ok(utf) => utf,
                         Err(_) => {
                             error!("Unable to parse string from received bytes");
@@ -50,14 +49,16 @@ impl Server{
 
                 debug!("Node sender {}", src_addr);
 
-                let mut data : Datagram = match serde_json::from_str(&payload) {
-                    Ok(d) =>   d,
-                    Err(_) =>  {
+                let mut data: Datagram = match serde_json::from_str(&payload) {
+                    Ok(d) => d,
+                    Err(_) => {
                         error!("Unable to decode string payload ");
                         debug!("Payload unknown [{}]", payload.trim_end());
                         continue;
                     }
                 };
+
+                debug!("destination -> {}", app.service.node.get_address());
 
                 if data.destination != app.service.node.get_address() {
                     warn!("Destination address doesn't match node address, ignoring");

@@ -7,9 +7,9 @@ pub enum Rpc{
     Ping,
     Store(String, String),
     FindNode(Key),
-    FindValue(Key),
+    FindValue(String),
 
     Pong,
     FindNodeReply(Vec<Node>),
-    FindValueReply(Key, String),
+    FindValueReply(String, String),
 }

@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
-use log::{debug, info};
+use log::{debug, error, info};
 use crate::dht::routing_table::RoutingTable;
 use crate::dht::rpc::Rpc;
 use crate::dht::rpc::Rpc::Pong;
-use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::node::Node;
 use crate::network::rpc_socket::RpcSocket;
@@ -36,7 +35,6 @@ impl KademliaDHT{
     }
 
     pub fn init(self) -> JoinHandle<()> {
-
         self.start_server()
     }
 
@@ -90,17 +88,88 @@ impl KademliaDHT{
 
     pub(self) fn find_node(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
         //Todo: find_node
-        Some(payload)
+        Some(
+           /* Datagram{
+                token_id: payload.token_id,
+                source: payload.source,
+                destination: payload.destination,
+                data_type : DatagramType::RESPONSE,
+                data:
+            }*/
+           payload
+        )
     }
 
     pub(self) fn find_value(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
-        //Todo: find_value
-        Some(payload)
+        //Todo: complete
+        // find_value -> se não tiver o Nó envia os k Nós mais próximos do valor??
+
+
+        let store_value = match self.store_values.lock() {
+            Ok(sv) => sv,
+            Err(s) => {
+                error!("Unable to decode string payload, {}", s.to_string());
+                debug!("Payload unknown [{:?}]", payload);
+                return None;
+            }
+        };
+
+
+        if let Rpc::FindValue(k) = payload.data {
+            let value = store_value.get(k.as_str());
+            if value.is_some() {
+                return Some(
+                    Datagram {
+                        token_id: payload.token_id,
+                        source: payload.source,
+                        destination: payload.destination,
+                        data_type: DatagramType::RESPONSE,
+                        data: Rpc::FindValueReply(k, value?.to_string())
+                    }
+                )
+            }
+        }
+
+        None
+
     }
 
     pub(self) fn store(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
         //Todo: store
-        Some(payload)
+        let mut store_value = match self.store_values.lock() {
+            Ok(sv) => sv,
+            Err(s) => {
+                error!("Unable to decode string payload, {}", s.to_string());
+                return None;
+            }
+        };
+
+
+        if let Rpc::FindValue(k) = payload.data {
+            let mut value = store_value.clone().get(k.as_str()).unwrap().to_string();
+            store_value.insert(k.clone(), value.clone());
+            return Some(
+                Datagram {
+                    token_id: payload.token_id,
+                    source: payload.source,
+                    destination: payload.destination,
+                    data_type: DatagramType::RESPONSE,
+                    data: Rpc::FindValueReply(k, value)
+                }
+            );
+        }
+        None
+    }
+
+    pub fn store_value(self : Arc<Self>, key : String, value : String) {
+        let mut store_value = match self.store_values.lock() {
+            Ok(sv) => sv,
+            Err(s) => {
+                error!("Unable to decode string payload, {}", s.to_string());
+                return;
+            }
+        };
+        store_value.insert(key,value);
     }
 
 }

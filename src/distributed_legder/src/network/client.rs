@@ -10,7 +10,6 @@ use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::key::Key;
 use crate::network::node::Node;
 use crate::network::rpc_socket::RpcSocket;
-use crate::tests;
 
 #[derive(Clone, Debug)] pub struct Client {
     pub rpc: Arc<RpcSocket>,

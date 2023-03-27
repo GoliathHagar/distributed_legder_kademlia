@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use env_logger::init;
 use crate::dht::kademlia::KademliaDHT;
 use crate::dht::rpc::Rpc;
 use crate::network::client::Client;
@@ -37,11 +38,11 @@ fn two_way_handshake_ping_pong() {
     let current_node = Node::new("127.0.0.1".to_string(),1234);
     let remote_node = Node::new("127.0.0.1".to_string(),8000);
 
-    let kad = Arc::new(KademliaDHT::new(current_node.clone(),None));
-    let kad2 = Arc::new(KademliaDHT::new(remote_node.clone(),None));
+    let kad = KademliaDHT::new(current_node.clone(),None);
+    let kad2 = KademliaDHT::new(remote_node.clone(),None);
 
-    let threa1 = Server::new(kad.clone()).start_service();
-    let threa2 = Server::new(kad2.clone()).start_service();
+    let threa1 = kad.clone().init();
+    let threa2 = kad2.clone().init();
 
     let client = Client::new(kad.service.clone());
     let client2 = Client::new(kad2.service.clone());
@@ -84,12 +85,122 @@ fn test_no_response(){
 
     let kad = Arc::new(KademliaDHT::new(current_node.clone(),None));
 
-    let threa1 = Server::new(kad.clone()).start_service();
+    let client = Client::new(kad.service.clone());
+
+    let rec : Option<Datagram> = client.clone()
+        .make_call(Rpc::Ping,Node::new("127.0.0.1".to_string(),8080))
+        .recv().unwrap();
+
+    assert_eq!(rec, None);
+}
+
+#[test]
+fn test_find_value_not_store(){
+    /*let mut data = &Datagram {
+        data_type: DatagramType::REQUEST,
+        token_id: "test".to_string(),
+        source: "127.0.0.1:8080".to_string(),
+        destination: "127.0.0.1:12345".to_string(),
+        data: Rpc::Ping
+    };*/
+    let kill = &Datagram {
+        data_type: DatagramType::KILL,
+        token_id: Key::new("test".to_string()),
+        source: "127.0.0.1:8081".to_string(),
+        destination: "127.0.0.1:8081".to_string(),
+        data: Rpc::Ping
+    };
+
+    let current_node = Node::new("127.0.0.1".to_string(),8081);
+
+    let kad = KademliaDHT::new(current_node.clone(),None);
+
+    let threa1 = kad.clone().init();
 
     let client = Client::new(kad.service.clone());
 
     let rec : Option<Datagram> = client.clone()
-        .make_call(Rpc::Ping,Node::new("0.0.0.0".to_string(),8000))
+        .make_call(Rpc::FindValue("test".to_string()), Node::new("127.0.0.1".to_string(), 8081))
+        .recv().unwrap();
+
+
+    client.datagram_request(kill.clone());
+
+    threa1.join().expect("thead 1 dead");
+
+
+    assert_eq!(rec, None);
+}
+#[test]
+fn test_find_value_store_successful(){
+    /*let mut data = &Datagram {
+        data_type: DatagramType::REQUEST,
+        token_id: "test".to_string(),
+        source: "127.0.0.1:8080".to_string(),
+        destination: "127.0.0.1:12345".to_string(),
+        data: Rpc::Ping
+    };*/
+    let kill = &Datagram {
+        data_type: DatagramType::KILL,
+        token_id: Key::new("test".to_string()),
+        source: "127.0.0.1:8082".to_string(),
+        destination: "127.0.0.1:8082".to_string(),
+        data: Rpc::Ping
+    };
+
+    let current_node = Node::new("127.0.0.1".to_string(),8082);
+
+    let kad = KademliaDHT::new(current_node.clone(),None);
+
+    let key = "test".to_string();
+
+    let value = "this is a test".to_string();
+
+    Arc::new(kad.clone()).store_value(key.clone(),value.clone());
+
+    let threa1 = kad.clone().init();
+
+    let client = Client::new(kad.service.clone());
+
+    let rec : Option<Datagram> = client.clone()
+        .make_call(Rpc::FindValue("test".to_string()), Node::new("127.0.0.1".to_string(), 8082))
+        .recv().unwrap();
+
+
+    client.datagram_request(kill.clone());
+
+    threa1.join().expect("thead 1 dead");
+
+
+    assert_eq!(rec.unwrap().data, Rpc::FindValueReply(key.clone(),value.clone()));
+}
+#[test]
+fn test_store(){
+    /*let mut data = &Datagram {
+        data_type: DatagramType::REQUEST,
+        token_id: "test".to_string(),
+        source: "127.0.0.1:8080".to_string(),
+        destination: "127.0.0.1:12345".to_string(),
+        data: Rpc::Ping
+    };*/
+    let kill = &Datagram {
+        data_type: DatagramType::KILL,
+        token_id: Key::new("test".to_string()),
+        source: "127.0.0.1:8083".to_string(),
+        destination: "127.0.0.1:8083".to_string(),
+        data: Rpc::Ping
+    };
+
+    let current_node = Node::new("127.0.0.1".to_string(),8083);
+
+    let kad = KademliaDHT::new(current_node.clone(),None);
+
+    let threa1 = kad.clone().init();
+
+    let client = Client::new(kad.service.clone());
+
+    let rec : Option<Datagram> = client.clone()
+        .make_call(Rpc::Store("test".to_string(),"this is a test".to_string()), Node::new("127.0.0.1".to_string(), 8083))
         .recv().unwrap();
 
 
