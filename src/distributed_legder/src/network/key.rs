@@ -1,4 +1,7 @@
-use std::fmt::{Debug, Error, Formatter};
+use std::fmt::{Binary, Debug, Error, Formatter};
+use std::iter::{Map, Zip};
+use std::slice::Iter;
+use log::error;
 use serde::{Deserialize, Serialize};
 use crate::constants::fixed_sizes::KEY_SIZE;
 use crate::constants::utils::calculate_sha256;
@@ -21,12 +24,36 @@ impl Key {
 
         Self(hash)
     }
+
+    pub fn distance(&self, key: &Key) -> [u8; KEY_SIZE]{
+        let mut d = [0; KEY_SIZE];
+        for i in 0..KEY_SIZE {
+            d[i] = &self.0[i] ^ key.0[i];
+        }
+
+        d
+    }
+
 }
+
 //to pretty print as toString()
 impl Debug for Key {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
         for x in &self.0 {
-            write!(f, "{:X}", x).expect("[FAILED] Key::Debug --> Failed to format contents of Key");
+            if let Err(_) = write!(f, "{:X}", x){
+                error!("Failed to format contents of Key")
+            }
+        }
+        Ok(())
+    }
+}
+
+impl Binary for Key {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        for x in &self.0 {
+            if let Err(_) =  write!(f, "{:b}", x){
+                error!("Failed to format contents of Key to Binary")
+            }
         }
         Ok(())
     }

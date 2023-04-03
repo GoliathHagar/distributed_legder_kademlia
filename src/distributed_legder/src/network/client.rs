@@ -61,7 +61,7 @@ impl Client{
         };
 
         if let Err(_) = self.rpc.socket.send_to(&data.as_bytes(), &payload.destination){
-            error!("[FAILED] Client unable to send request");
+            error!("Client unable to send request");
             return receiver;
         }
 
@@ -114,7 +114,7 @@ impl Client{
         };
 
         if let Err(_) = self.rpc.socket.send_to(&data.as_bytes(), &payload.destination){
-            error!("[FAILED] Client unable to send request");
+            error!("Client unable to send request");
             return receiver;
         }
 

@@ -16,3 +16,6 @@ pub const UDP_STREAMING_BUFFER_SIZE :usize = 8192 ;
 
 // response timeout 5000ms
 pub const RESPONSE_TIMEOUT: u64 = 8000;
+
+//enable skademlia thrust security mecanism
+pub const ENABLE_SECURITY: bool = false;
