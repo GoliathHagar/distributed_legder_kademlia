@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use log::{debug, error, info};
 use crate::constants::fixed_sizes::K_BUCKET_SIZE;
-use crate::dht::routing_table::RoutingTable;
+use crate::dht::routing_table::{RoutingDistance, RoutingTable};
 use crate::dht::rpc::Rpc;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::key::Key;
@@ -71,7 +71,7 @@ impl KademliaDHT{
         resp
     }
 
-    pub fn ping_reply(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
+    pub(self) fn ping_reply(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
         Some(
             Datagram{
                 token_id: payload.token_id,
@@ -183,7 +183,7 @@ impl KademliaDHT{
         let mut nodes = Vec::new();
 
         // nodes visited
-        let mut queried  = HashSet::new();
+        let mut queried : HashSet<RoutingDistance>  = HashSet::new();
 
         let routes = match self.routing_table.lock() {
             Ok(rt) => rt,
@@ -196,6 +196,11 @@ impl KademliaDHT{
         // nodes to visit
         let mut to_query = BinaryHeap::from(routes.get_closest_nodes(key, K_BUCKET_SIZE));
         drop(routes);
+
+        for nd in to_query {
+            queried.insert(nd.clone());
+        }
+
 
 
 

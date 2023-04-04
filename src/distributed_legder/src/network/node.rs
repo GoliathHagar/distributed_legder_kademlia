@@ -1,5 +1,6 @@
 use crate::network::key::Key;
 use serde::{Deserialize, Serialize};
+use crate::constants::fixed_sizes::KEY_SIZE;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize )]
 pub struct Node {
@@ -21,4 +22,6 @@ impl Node{
         format!("{}:{}", self.ip, self.port)
     }
 }
+
+
 

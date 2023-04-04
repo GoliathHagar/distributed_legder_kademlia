@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::ops::Index;
 use std::process::id;
 use std::sync::{Arc, Mutex};
@@ -21,6 +22,8 @@ pub struct RoutingTable{
     pub buckets: Vec<Bucket>,
 }
 
+#[derive(Debug, Eq, Hash, Clone)]
+pub struct RoutingDistance( pub Node, pub [u8; KEY_SIZE]);
 /*
 
 A k-bucket with index i stores contacts whose ids
@@ -61,7 +64,7 @@ impl RoutingTable{
         //  2^j <= distance(node, contact) < 2^(j+1)
         // a node with distance d will be put in the k-bucket with index i=⌊logd⌋
 
-        let dst = self.node.id.clone().distance(&key.id);
+        let dst = self.node.id.clone().distance(key);
         let thrust : usize = if ENABLE_SECURITY { key.thrust()} else { 0 };
 
         for i in 0..KEY_SIZE {
@@ -79,9 +82,9 @@ impl RoutingTable{
         ((KEY_SIZE*8 -1) + thrust)%256
     }
 
-    pub fn get_closest_nodes(&self, key: &Key, capacity : usize) -> Vec<(Node, [u8; KEY_SIZE])>{
+    pub fn get_closest_nodes(&self, key: &Key, capacity : usize) -> Vec<RoutingDistance>{
 
-        let mut closests : Vec<(Node,[u8; KEY_SIZE])> = Vec::with_capacity(capacity);
+        let mut closests : Vec<RoutingDistance> = Vec::with_capacity(capacity);
 
         let mut bucket_index : usize = self.node_find_bucket_index(key);
         let mut bucket_index_reverse = if bucket_index  > 0 {bucket_index -1} else { 0 };
@@ -89,7 +92,7 @@ impl RoutingTable{
         //search forward (closests)
         while closests.len() < capacity && bucket_index < self.buckets.len() -1 {
             for nd in &self.buckets[bucket_index].nodes {
-                closests.push((nd.clone(), nd.id.distance(&key.id)))
+                closests.push(RoutingDistance(nd.clone(), nd.id.distance(&key)))
             }
 
             bucket_index += 1;
@@ -101,7 +104,7 @@ impl RoutingTable{
             bucket_index_reverse -= 1;
 
             for nd in &self.buckets[bucket_index_reverse].nodes {
-                closests.push((nd.clone(), nd.id.distance(&key.id) ))
+                closests.push(RoutingDistance(nd.clone(), nd.id.distance(&key) ))
             }
         }
 
@@ -169,4 +172,30 @@ impl RoutingTable{
     }
 }
 
+impl PartialEq for RoutingDistance {
+    fn eq(&self, other: &Self) -> bool {
+        let mut equal = true;
+        let mut i = 0;
+        while equal && i < KEY_SIZE {
+            if self.1[i] != other.1[i] {
+                equal = false;
+            }
 
+            i += 1;
+        }
+
+        equal
+    }
+}
+
+impl PartialOrd for RoutingDistance {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(other.1.cmp(&self.1))
+    }
+}
+
+impl Ord for RoutingDistance {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.1.cmp(&self.1)
+    }
+}
