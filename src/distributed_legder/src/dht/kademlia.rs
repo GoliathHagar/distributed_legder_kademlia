@@ -1,10 +1,13 @@
+
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::sync::{Arc, Mutex};
+use std::thread;
 use std::thread::JoinHandle;
-use log::{debug, error, info};
-use crate::constants::fixed_sizes::K_BUCKET_SIZE;
+use log::{debug, error, info, log};
+use crate::constants::fixed_sizes::{ALPHA, K_BUCKET_SIZE};
 use crate::dht::routing_table::{RoutingDistance, RoutingTable};
 use crate::dht::rpc::Rpc;
+use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::key::Key;
 use crate::network::node::Node;
@@ -179,7 +182,7 @@ impl KademliaDHT{
         None
     }
 
-    pub(self) fn node_lookup(self : Arc<Self>, key : &Key) -> Vec<Node> {
+    pub(self) fn node_lookup(self : Arc<Self>, key : &Key) -> Vec<RoutingDistance> {
         let mut nodes = Vec::new();
 
         // nodes visited
@@ -197,16 +200,98 @@ impl KademliaDHT{
         let mut to_query = BinaryHeap::from(routes.get_closest_nodes(key, K_BUCKET_SIZE));
         drop(routes);
 
-        for nd in to_query {
+        for nd in &to_query {
             queried.insert(nd.clone());
         }
 
+        while !to_query.is_empty() {
+            let mut jobs : Vec<JoinHandle<Option<Vec<RoutingDistance>>>>  = Vec::new();
+
+            let mut queries: Vec<RoutingDistance> = Vec::new();
+            let mut results: Vec<Option<Vec<RoutingDistance>>> = Vec::new();
+
+            for _ in 0..ALPHA {
+                match to_query.pop() {
+                    Some(entry) => {
+                        queries.push(entry);
+                    }
+                    None => {
+                        break;
+                    }
+                }
+            }
+
+            for &RoutingDistance(ref node, _) in &queries{
+                let no = node.clone();
+                let k = key.clone();
+                let kad = self.clone();
 
 
+                jobs.push(thread::spawn(move || { kad.find_node(k,no) }));
+            }
+
+            for job in jobs  {
+                if let Ok(j) = job.join() {
+                    results.push(j);
+                }
+                else { error!("nodes_lookup Failed to join thread while visiting nodes") }
+            }
+
+            for (r, q) in results.into_iter().zip(queries){
+                if let Some(nds) = r{
+                    nodes.push(q);
+
+                    for nd in nds{
+                        if queried.insert(nd.clone()){
+                            to_query.push(nd)
+                        }
+                    }
+                }
+            }
+
+        }
+
+        nodes.sort_by(|a, b| a.1.cmp(&b.1));
 
         nodes
     }
 
+    fn find_node(self : Arc<Self>, key : Key, destination: Node) -> Option<Vec<RoutingDistance>> {
+        let nodes : Vec<RoutingDistance> = Vec::new();
+
+        let client = Client::new(self.service.clone());
+
+        let res = client.make_call(Rpc::FindNode(key),destination.clone()).recv();
+
+        let mut routes = match self.routing_table.lock() {
+            Ok(rt) => rt,
+            Err(s) => {
+                error!("Failed to acquire lock on Routing Table");
+                return Some(nodes);
+            }
+        };
+
+        if let Ok(Some(d)) = res{
+            routes.update(destination, Some(self.service.clone()));
+            drop(routes);
+
+            if let Rpc::FindNodeReply( n) = d.data{
+                let ret: Vec<RoutingDistance> = n.iter()
+                    .map(| a| RoutingDistance(a.clone(), self.node.id.distance(&a.id)))
+                    .collect();
+
+                return Some(ret)
+            }
+
+            None
+        }
+        else {
+            routes.remove(&destination);
+            None
+        }
+
+
+    }
 
     pub fn store_value(self : Arc<Self>, key : String, value : String) -> bool {
         let mut store_value = match self.store_values.lock() {

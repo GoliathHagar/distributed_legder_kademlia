@@ -7,6 +7,8 @@ pub const KEY_SIZE: usize = 32;
 // number entries in a list
 pub const K_BUCKET_SIZE: usize = 20;
 
+pub const ALPHA: usize = 3;
+
 // a list for each bit of the node ID
 // 32 bytes * 8 --> 256 bit
 pub  const N_BUCKETS: usize = KEY_SIZE * BYTE;

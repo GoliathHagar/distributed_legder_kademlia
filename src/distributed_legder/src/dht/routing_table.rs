@@ -149,23 +149,24 @@ impl RoutingTable{
                 }
             }
         }
-        else if rpc.is_some(){
-            let nd = self.buckets[index].nodes[0].clone();
+        else {
+            if rpc.is_some() {
+                let nd = self.buckets[index].nodes[0].clone();
 
-            match Client::new(rpc.unwrap()).make_call(Rpc::Ping,nd.clone()).recv() {
-                Ok(pong) =>  if let Some(p) = pong {
-                    let add_front = self.buckets[index].nodes.remove(0);
-                    self.buckets[index].nodes.push(add_front);
-                }
-                ,
-                Err(_) => {
-                    error!("Failed to contact node {:?}", nd.id);
+                match Client::new(rpc.unwrap()).make_call(Rpc::Ping, nd.clone()).recv() {
+                    Ok(pong) => if let Some(p) = pong {
+                        let add_front = self.buckets[index].nodes.remove(0);
+                        self.buckets[index].nodes.push(add_front);
+                    }
+                    ,
+                    Err(_) => {
+                        error!("Failed to contact node {:?}", nd.id);
 
-                    self.buckets[index].nodes.remove(0);
-                    self.buckets[index].nodes.push(node);
-                }
-            };
-
+                        self.buckets[index].nodes.remove(0);
+                        self.buckets[index].nodes.push(node);
+                    }
+                };
+            }
         }
 
 
