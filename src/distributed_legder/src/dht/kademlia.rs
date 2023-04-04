@@ -2,10 +2,11 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use log::{debug, error, info};
+use crate::constants::fixed_sizes::K_BUCKET_SIZE;
 use crate::dht::routing_table::RoutingTable;
 use crate::dht::rpc::Rpc;
-use crate::dht::rpc::Rpc::Pong;
 use crate::network::datagram::{Datagram, DatagramType};
+use crate::network::key::Key;
 use crate::network::node::Node;
 use crate::network::rpc_socket::RpcSocket;
 use crate::network::server::Server;
@@ -55,16 +56,16 @@ impl KademliaDHT{
 
         let resp: Option<Datagram> = match req.data {
             Rpc::Ping =>{
-                app.ping(payload)
+                app.ping_reply(payload)
             }
             Rpc::FindNode(k) =>{
-                app.find_node(payload)
+                app.find_node_reply(payload)
             }
             Rpc::FindValue(k) =>{
-                app.find_value(payload)
+                app.find_value_reply(payload)
             }
             Rpc::Store(k,v) =>{
-                app.store(payload)
+                app.store_reply(payload)
             }
             _ => { None } //reply payload ignored
         };
@@ -72,53 +73,76 @@ impl KademliaDHT{
         resp
     }
 
-    pub fn ping(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
-        //todo: complete GOLIATHHAGAR
-
+    pub fn ping_reply(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
         Some(
             Datagram{
                 token_id: payload.token_id,
                 source: payload.source,
                 destination: payload.destination,
                 data_type : DatagramType::RESPONSE,
-                data: Pong
+                data: Rpc::Pong
             }
         )
     }
 
-    pub(self) fn find_node(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
-        //Todo: find_node
-        Some(
-           /* Datagram{
-                token_id: payload.token_id,
-                source: payload.source,
-                destination: payload.destination,
-                data_type : DatagramType::RESPONSE,
-                data:
-            }*/
-           payload
-        )
+    pub(self) fn find_node_reply(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
+
+        let routes = match self.routing_table.lock() {
+            Ok(rt) => rt,
+            Err(s) => {
+                error!("Failed to acquire lock on Routing Table");
+                return None;
+            }
+        };
+
+        if let Rpc::FindNode(key) = payload.data.clone() {
+            let info  = payload.clone().extract_src_ip_port();
+
+            if !info.is_some() { return  None }
+
+            let node = Node{
+                    ip: info.clone().unwrap().0,
+                    port: info.unwrap().1 ,
+                    id: key,
+            };
+
+
+            let res = routes.get_closest_nodes(&node, K_BUCKET_SIZE);
+            let closest_nodes : Vec<Node> = res.iter().map(|n | n.0.clone()).collect();
+
+           return  Some(
+                 Datagram{
+                     token_id: payload.token_id,
+                     source: payload.source,
+                     destination: payload.destination,
+                     data_type : DatagramType::RESPONSE,
+                     data: Rpc::FindNodeReply(closest_nodes)
+                 }
+            )
+        }
+
+        None
     }
 
-    pub(self) fn find_value(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
-        //Todo: complete
-        // find_value -> se não tiver o Nó envia os k Nós mais próximos do valor??
+    pub(self) fn find_value_reply(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
+        //Todo: find_value -> se não tiver o Nó envia os k Nós mais próximos do valor??
 
 
         let store_value = match self.store_values.lock() {
             Ok(sv) => sv,
             Err(s) => {
-                error!("Unable to decode string payload, {}", s.to_string());
-                debug!("Payload unknown [{:?}]", payload);
+                error!("Failed to acquire lock on Store Values");
                 return None;
             }
         };
 
 
-        if let Rpc::FindValue(k) = payload.data {
+        if let Rpc::FindValue(k) = payload.data.clone() {
             let value = store_value.get(k.as_str());
-            if value.is_some() {
-                return Some(
+
+            return if value.is_some() {
+
+                Some(
                     Datagram {
                         token_id: payload.token_id,
                         source: payload.source,
@@ -127,6 +151,13 @@ impl KademliaDHT{
                         data: Rpc::FindValueReply(k, value?.to_string())
                     }
                 )
+            } else {
+                drop(store_value);
+                let mut data = payload.clone();
+
+                data.data = Rpc::FindNode(Key::new(k));
+
+                self.find_node_reply(data)
             }
         }
 
@@ -134,42 +165,47 @@ impl KademliaDHT{
 
     }
 
-    pub(self) fn store(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
+    pub(self) fn store_reply(self : Arc<Self>, payload: Datagram) -> Option<Datagram> {
         //Todo: store
         let mut store_value = match self.store_values.lock() {
             Ok(sv) => sv,
             Err(s) => {
-                error!("Unable to decode string payload, {}", s.to_string());
+                error!("Failed to acquire lock on Store Values");
                 return None;
             }
         };
 
 
-        if let Rpc::FindValue(k) = payload.data {
-            let mut value = store_value.clone().get(k.as_str()).unwrap().to_string();
+        if let Rpc::Store(k, value) = payload.data {
             store_value.insert(k.clone(), value.clone());
+
             return Some(
                 Datagram {
                     token_id: payload.token_id,
                     source: payload.source,
                     destination: payload.destination,
                     data_type: DatagramType::RESPONSE,
-                    data: Rpc::FindValueReply(k, value)
+                    data: Rpc::Pong
                 }
             );
         }
         None
     }
 
-    pub fn store_value(self : Arc<Self>, key : String, value : String) {
+
+
+
+    pub fn store_value(self : Arc<Self>, key : String, value : String) -> bool {
         let mut store_value = match self.store_values.lock() {
             Ok(sv) => sv,
             Err(s) => {
-                error!("Unable to decode string payload, {}", s.to_string());
-                return;
+                error!("Failed to acquire lock on Store Values");
+                return false;
             }
         };
         store_value.insert(key,value);
+
+        true
     }
 
 }
