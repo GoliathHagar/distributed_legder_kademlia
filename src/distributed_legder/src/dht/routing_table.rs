@@ -56,13 +56,13 @@ impl RoutingTable{
         rt
     }
 
-    pub fn node_find_bucket_index(&self, node: &Node) -> usize {
+    pub fn node_find_bucket_index(&self, key: &Key) -> usize {
         // given a bucket j, we are guaranteed that
         //  2^j <= distance(node, contact) < 2^(j+1)
         // a node with distance d will be put in the k-bucket with index i=⌊logd⌋
 
-        let dst = self.node.id.clone().distance(&node.id);
-        let thrust : usize = if ENABLE_SECURITY { node.thrust()} else { 0 };
+        let dst = self.node.id.clone().distance(&key.id);
+        let thrust : usize = if ENABLE_SECURITY { key.thrust()} else { 0 };
 
         for i in 0..KEY_SIZE {
             for j in (0..8).rev(){
@@ -79,17 +79,17 @@ impl RoutingTable{
         ((KEY_SIZE*8 -1) + thrust)%256
     }
 
-    pub fn get_closest_nodes(&self, node: &Node, capacity : usize) -> Vec<(Node,[u8; KEY_SIZE])>{
+    pub fn get_closest_nodes(&self, key: &Key, capacity : usize) -> Vec<(Node, [u8; KEY_SIZE])>{
 
         let mut closests : Vec<(Node,[u8; KEY_SIZE])> = Vec::with_capacity(capacity);
 
-        let mut bucket_index : usize = self.node_find_bucket_index(node);
+        let mut bucket_index : usize = self.node_find_bucket_index(key);
         let mut bucket_index_reverse = if bucket_index  > 0 {bucket_index -1} else { 0 };
 
         //search forward (closests)
         while closests.len() < capacity && bucket_index < self.buckets.len() -1 {
             for nd in &self.buckets[bucket_index].nodes {
-                closests.push((nd.clone(), nd.id.distance(&node.id)))
+                closests.push((nd.clone(), nd.id.distance(&key.id)))
             }
 
             bucket_index += 1;
@@ -101,7 +101,7 @@ impl RoutingTable{
             bucket_index_reverse -= 1;
 
             for nd in &self.buckets[bucket_index_reverse].nodes {
-                closests.push((nd.clone(), nd.id.distance(&node.id) ))
+                closests.push((nd.clone(), nd.id.distance(&key.id) ))
             }
         }
 
@@ -116,7 +116,7 @@ impl RoutingTable{
     }
 
     pub fn remove(&mut self, node: &Node) {
-        let bucket_idx : usize = self.node_find_bucket_index(node);
+        let bucket_idx : usize = self.node_find_bucket_index(&node.id);
 
         if let Some(i) = self.buckets[bucket_idx]
             .nodes
@@ -130,7 +130,7 @@ impl RoutingTable{
     }
 
     pub fn update(&mut self, node: Node,  rpc: Option<Arc<RpcSocket> >){
-        let index = self.node_find_bucket_index(&node);
+        let index = self.node_find_bucket_index(&node.id);
 
         if self.buckets[index].nodes.len() < self.buckets[index].size {
             let node_idx = self.buckets[index].nodes.iter()

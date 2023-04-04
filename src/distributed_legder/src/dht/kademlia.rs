@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use log::{debug, error, info};
@@ -39,7 +39,6 @@ impl KademliaDHT{
         self.start_server()
     }
 
-
     fn start_server(self) -> JoinHandle<()> {
         let server = Server::new(Arc::new(self));
         let server_thread = server.start_service();
@@ -47,7 +46,6 @@ impl KademliaDHT{
         server_thread
 
     }
-
 
     pub fn handle_request(app: Arc<KademliaDHT>, req: Datagram) -> Option<Datagram> {
 
@@ -96,18 +94,8 @@ impl KademliaDHT{
         };
 
         if let Rpc::FindNode(key) = payload.data.clone() {
-            let info  = payload.clone().extract_src_ip_port();
 
-            if !info.is_some() { return  None }
-
-            let node = Node{
-                    ip: info.clone().unwrap().0,
-                    port: info.unwrap().1 ,
-                    id: key,
-            };
-
-
-            let res = routes.get_closest_nodes(&node, K_BUCKET_SIZE);
+            let res = routes.get_closest_nodes(&key, K_BUCKET_SIZE);
             let closest_nodes : Vec<Node> = res.iter().map(|n | n.0.clone()).collect();
 
            return  Some(
@@ -141,7 +129,6 @@ impl KademliaDHT{
             let value = store_value.get(k.as_str());
 
             return if value.is_some() {
-
                 Some(
                     Datagram {
                         token_id: payload.token_id,
@@ -192,7 +179,28 @@ impl KademliaDHT{
         None
     }
 
+    pub(self) fn node_lookup(self : Arc<Self>, key : &Key) -> Vec<Node> {
+        let mut nodes = Vec::new();
 
+        // nodes visited
+        let mut queried  = HashSet::new();
+
+        let routes = match self.routing_table.lock() {
+            Ok(rt) => rt,
+            Err(s) => {
+                error!("Failed to acquire lock on Routing Table");
+                return nodes;
+            }
+        };
+
+        // nodes to visit
+        let mut to_query = BinaryHeap::from(routes.get_closest_nodes(key, K_BUCKET_SIZE));
+        drop(routes);
+
+
+
+        nodes
+    }
 
 
     pub fn store_value(self : Arc<Self>, key : String, value : String) -> bool {

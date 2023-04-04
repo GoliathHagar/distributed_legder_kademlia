@@ -28,7 +28,7 @@ fn distance_to_self(){
         node.clone(), None
     );
 
-    let index =  rt.node_find_bucket_index(&node2);
+    let index =  rt.node_find_bucket_index(&node2.id);
 
 
     println!(
@@ -85,14 +85,14 @@ fn get_k_closest_node(){
 
     }
 
-    let cl = rt.get_closest_nodes(&contact, 5);
+    let cl = rt.get_closest_nodes(&contact.id, 5);
     for b in 0..rt.buckets.len(){
         println!("{} = {:?}",b, rt.buckets[b] );
 
     }
     for x in cl.clone() {
         println!("closest {:?} {:?} {}", x.0, Key{ 0: x.1},
-                 RoutingTable::new(contact.clone(), None).node_find_bucket_index(&x.0))
+                 RoutingTable::new(contact.clone(), None).node_find_bucket_index(&x.0.id))
     }
 
     assert_eq!(cl.len(), 5)
@@ -128,7 +128,7 @@ fn routing_table_building(){
 
    let loc =  if let Ok(l) =  boot_stap_node.routing_table.lock() {
        let cls =  l.get_closest_nodes(&Node::new(get_local_ip()
-                                                       .unwrap_or("0.0.0.0".to_string()), 1431),20);
+                                                       .unwrap_or("0.0.0.0".to_string()), 1431).id,20);
        for x in cls.clone() {
            println!("closest {:?} {:?}", x.0, Key{ 0: x.1})
        }

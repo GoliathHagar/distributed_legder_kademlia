@@ -12,6 +12,12 @@ pub struct Key(
     pub [u8; KEY_SIZE]
 );
 
+
+struct  ThrustAndReputation{
+    total_interation : u32,
+    successfully_interation: u32
+}
+
 impl Key {
     pub fn new(input: String) -> Self {
         // we know that the hash output is going to be 256 bits = 32 bytes
@@ -33,6 +39,13 @@ impl Key {
 
         d
     }
+
+    pub fn thrust(&self) -> usize {
+
+        //nd = od × b + (1 − b) ×1/t
+        0
+    }
+
 
 }
 
