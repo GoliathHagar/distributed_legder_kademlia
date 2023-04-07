@@ -10,7 +10,7 @@ use crate::network::node::Node;
 pub struct RpcSocket{
     pub node : Arc<Node>,
     pub socket: Arc<UdpSocket>,
-    pub await_response: Arc<Mutex<HashMap<Key, mpsc::Sender<Option<Datagram>>>>>,
+    pub awaiting_response: Arc<Mutex<HashMap<Key, mpsc::Sender<Option<Datagram>>>>>,
 }
 
 impl RpcSocket {
@@ -29,7 +29,7 @@ impl RpcSocket {
         Self{
             node: Arc::new(node),
             socket: Arc::new(socket),
-            await_response: Arc::new(Mutex::new(HashMap::new()))
+            awaiting_response: Arc::new(Mutex::new(HashMap::new()))
         }
 
     }

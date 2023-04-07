@@ -1,16 +1,14 @@
 use std::sync::Arc;
-use env_logger::init;
 use crate::dht::kademlia::KademliaDHT;
 use crate::dht::rpc::Rpc;
 use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::key::Key;
 use crate::network::node::Node;
-use crate::network::server::Server;
 
 #[test]
 fn two_way_handshake_ping_pong() {
-    let mut data = &Datagram {
+    let data = &Datagram {
         data_type: DatagramType::REQUEST,
         token_id: Key::new("test".to_string()),
         source: "127.0.0.1:1234".to_string(),
@@ -72,7 +70,7 @@ fn test_no_response(){
         source: "127.0.0.1:8080".to_string(),
         destination: "127.0.0.1:12345".to_string(),
         data: Rpc::Ping
-    };*/
+    };
     let kill = &Datagram {
         data_type: DatagramType::KILL,
         token_id: Key::new("test".to_string()),
@@ -80,7 +78,7 @@ fn test_no_response(){
         destination: "127.0.0.1:8080".to_string(),
         data: Rpc::Ping
     };
-
+*/
     let current_node = Node::new("127.0.0.1".to_string(),8080);
 
     let kad = Arc::new(KademliaDHT::new(current_node.clone(),None));
@@ -156,7 +154,7 @@ fn test_find_value_store_successful(){
 
     let value = "this is a test".to_string();
 
-    Arc::new(kad.clone()).store_value(key.clone(),value.clone());
+    Arc::new(kad.clone()).put(key.clone(), value.clone());
 
     let threa1 = kad.clone().init();
 

@@ -1,7 +1,5 @@
 use std::cmp::Ordering;
-use std::ops::Index;
-use std::process::id;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc};
 use log::{debug, error};
 use crate::network::node::Node;
 use crate::constants::fixed_sizes::{ENABLE_SECURITY, K_BUCKET_SIZE, KEY_SIZE, N_BUCKETS};
@@ -70,9 +68,9 @@ impl RoutingTable{
         for i in 0..KEY_SIZE {
             for j in (0..8).rev(){
                 let bit = dst[i] & (0x01 << j);
-                debug!("(i: {} ,j: {} , index: {}, dst {:#010b} , bit {} )", i,j,i*8 + 7-j, dst[i], bit.clone() );
                 //println!("(i: {} ,j: {} , index: {}, dst {:#010b} , bit {} )", i,j,i*8 + 7-j, dst[i], bit.clone() );
                 if bit != 0 {
+                    debug!("(i: {} ,j: {} , index: {}, dst {:#010b} , bit {} )", i,j,i*8 + 7-j, dst[i], bit.clone() );
                     return  ((i*8 + 7- j) + thrust)%256;
                 }
                 // else if i == KEY_SIZE -1 && j==0 { return thrust%256 } //distance to self
@@ -153,13 +151,12 @@ impl RoutingTable{
             if rpc.is_some() {
                 let nd = self.buckets[index].nodes[0].clone();
 
-                match Client::new(rpc.unwrap()).make_call(Rpc::Ping, nd.clone()).recv() {
-                    Ok(pong) => if let Some(p) = pong {
+                match Client::new(rpc.unwrap()).make_call(Rpc::Ping, nd.clone()).recv().unwrap() {
+                    Some(_) =>  {
                         let add_front = self.buckets[index].nodes.remove(0);
                         self.buckets[index].nodes.push(add_front);
-                    }
-                    ,
-                    Err(_) => {
+                    },
+                    None => {
                         error!("Failed to contact node {:?}", nd.id);
 
                         self.buckets[index].nodes.remove(0);

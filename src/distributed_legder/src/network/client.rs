@@ -32,7 +32,7 @@ impl Client{
             )
         );
 
-        let mut payload= Datagram{
+        let payload= Datagram{
             token_id: token.clone(),
             data_type:DatagramType::REQUEST,
             data: payload,
@@ -42,7 +42,7 @@ impl Client{
 
         debug!("New request {:?}", payload);
 
-        let mut await_response =  match self.rpc.await_response.lock() {
+        let mut await_response =  match self.rpc.awaiting_response.lock() {
             Ok(d) => d,
             Err(_) =>{
                 error!("Failed to acquire lock");
@@ -72,7 +72,7 @@ impl Client{
         thread::spawn(move || {
             thread::sleep(std::time::Duration::from_millis(RESPONSE_TIMEOUT));
             if let Ok(_) = sender.send(None) {
-                let mut await_response =  match rpc.await_response.lock() {
+                let mut await_response =  match rpc.awaiting_response.lock() {
                     Ok(l) => l,
                     Err(_) =>{
                         error!("Failed to acquire lock");
@@ -91,11 +91,10 @@ impl Client{
     //Do not use in kademlia class
     pub fn datagram_request(self, payload: Datagram) -> Receiver<Option<Datagram>> {
         let (sender, receiver) = mpsc::channel();
-        let source_addr = self.rpc.node.get_address();
 
         debug!("New request {:?}", payload);
 
-        let mut await_response =  match self.rpc.await_response.lock() {
+        let mut await_response =  match self.rpc.awaiting_response.lock() {
             Ok(d) => d,
             Err(_) =>{
                 error!("Failed to acquire lock");
@@ -125,7 +124,7 @@ impl Client{
         thread::spawn(move || {
             thread::sleep(std::time::Duration::from_millis(RESPONSE_TIMEOUT));
             if let Ok(_) = sender.send(None) {
-                let mut await_response =  match rpc.await_response.lock() {
+                let mut await_response =  match rpc.awaiting_response.lock() {
                     Ok(l) => l,
                     Err(_) =>{
                         error!("Failed to acquire lock");

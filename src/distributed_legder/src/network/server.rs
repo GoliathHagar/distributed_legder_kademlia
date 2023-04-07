@@ -36,7 +36,7 @@ impl Server{
                     }
                 };
 
-                debug!("Source address {}", src_addr);
+                debug!("Source address {} Destination address {}", src_addr, app.service.node.get_address());
 
                 let payload =
                     String::from(match str::from_utf8(&buffer[..size]) {
@@ -47,7 +47,6 @@ impl Server{
                         }
                     });
 
-                debug!("Node sender {}", src_addr);
 
                 let mut data: Datagram = match serde_json::from_str(&payload) {
                     Ok(d) => d,
@@ -57,8 +56,6 @@ impl Server{
                         continue;
                     }
                 };
-
-                debug!("destination -> {}", app.service.node.get_address());
 
                 if data.destination != app.service.node.get_address() {
                     warn!("Destination address doesn't match node address, ignoring");
@@ -105,7 +102,7 @@ impl Server{
                     Server::reply(app.service.clone(),&Datagram {
                         token_id : payload.token_id,
                         data_type: DatagramType::RESPONSE,
-                        source:payload.destination,
+                        source:app.node.get_address(),
                         destination: payload.source,
                         data: payload.data
                     });
@@ -122,7 +119,7 @@ impl Server{
     fn response_handler(self, payload: Datagram) {
         thread::spawn(move || {
             let app = self.app.clone();
-            let mut await_response = app.service.await_response
+            let mut await_response = app.service.awaiting_response
                 .lock()
                 .map_err(|_| error!("Failed to acquire lock")).unwrap();
 
