@@ -1,8 +1,9 @@
 // BYTES 8 BITS
-const  BYTE :usize = 8;
+pub const  BYTE :usize = 8;
 
 // 256 bits --> 32 bytes
-pub const KEY_SIZE: usize = 32;
+// 160 bits --> 20 bytes (require alter hasher in utils.rs and key.rs)
+pub const KEY_SIZE: usize = 20;
 
 // number entries in a list
 pub const K_BUCKET_SIZE: usize = 20;

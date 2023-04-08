@@ -2,7 +2,7 @@ use std::fmt::{Binary, Debug, Error, Formatter};
 use log::error;
 use serde::{Deserialize, Serialize};
 use crate::constants::fixed_sizes::KEY_SIZE;
-use crate::constants::utils::calculate_sha256;
+use crate::constants::utils::{calculate_sha1, calculate_sha256};
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Key(
@@ -19,7 +19,12 @@ struct  ThrustAndReputation{
 impl Key {
     pub fn new(input: String) -> Self {
         // we know that the hash output is going to be 256 bits = 32 bytes
-        let result = calculate_sha256(&input);
+        let result = match KEY_SIZE {
+            32 => { calculate_sha256(&input)}
+            20 => { calculate_sha1(&input)}
+            _ => { Vec::new() }
+        };
+
         let mut hash = [0; KEY_SIZE];
 
         for i in 0..result.len() {
