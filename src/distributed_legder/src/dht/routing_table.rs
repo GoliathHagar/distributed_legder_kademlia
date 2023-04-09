@@ -98,12 +98,12 @@ impl RoutingTable{
         }
 
         //search backwards (farthest)
-        while closests.len() < capacity &&  bucket_index_reverse > 0 {
-            bucket_index_reverse -= 1;
-
+        while closests.len() < capacity &&  bucket_index_reverse >= 0 {
             for nd in &self.buckets[bucket_index_reverse].nodes {
                 closests.push(RoutingDistance(nd.clone(), nd.id.distance(&key) ))
             }
+
+            bucket_index_reverse -= 1;
         }
 
         closests.sort_by(
