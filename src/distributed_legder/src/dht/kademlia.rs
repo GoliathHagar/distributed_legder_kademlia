@@ -290,6 +290,8 @@ impl KademliaDHT{
 
         nodes.sort_by(|a, b| a.1.cmp(&b.1));
 
+        nodes.truncate(K_BUCKET_SIZE);
+
         nodes
     }
 
