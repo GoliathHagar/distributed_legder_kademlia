@@ -55,25 +55,27 @@ fn main() {
     let threa1 = kad.init();
     //let threa2 = kad_remote.init();
 
-/*
-    Arc::new(kadc.clone()).put("test".to_string(),"works".to_string());
-    Arc::new(kadc.clone()).put("test2".to_string(), "works 2".to_string());
-    sleep(Duration::from_millis(2000));
-    Arc::new(kadr.clone()).put("test-remote".to_string(), "remote value stores".to_string());
-    let val = Arc::new(kadr.clone()).get("test".to_string());
-    let val2 = Arc::new(kadc.clone()).get("test-remote".to_string());
+    Arc::new(kadc.clone()).put("test00".to_string(),"It works, this value was stored successifully".to_string());
+    /*
+        Arc::new(kadc.clone()).put("test".to_string(),"works".to_string());
+        Arc::new(kadc.clone()).put("test2".to_string(), "works 2".to_string());
+        sleep(Duration::from_millis(2000));
+        Arc::new(kadr.clone()).put("test-remote".to_string(), "remote value stores".to_string());
+        let val = Arc::new(kadr.clone()).get("test".to_string());
+        let val2 = Arc::new(kadc.clone()).get("test-remote".to_string());
 
-    debug!("value = {}, {}", val.unwrap_or("Not Found".to_string()), val2.unwrap_or("Not Found 2".to_string()));
+        debug!("value = {}, {}", val.unwrap_or("Not Found".to_string()), val2.unwrap_or("Not Found 2".to_string()));
 
 
-    let t0 = kad_remote2.init();
+        let t0 = kad_remote2.init();
 
-    sleep(Duration::from_millis(6000));
+        sleep(Duration::from_millis(6000));
 
-    Arc::new(kadb).dump_state("state_dumps/boot.json");
-    Arc::new(kadr).dump_state("state_dumps/remote.json");
-    Arc::new(kadr2).dump_state("state_dumps/remote2.json");*/
-    Arc::new(kadc).dump_state("state_dumps/self.json");
+        Arc::new(kadb).dump_state("state_dumps/boot.json");
+        Arc::new(kadr).dump_state("state_dumps/remote.json");
+        Arc::new(kadr2).dump_state("state_dumps/remote2.json");*/
+    // sleep(Duration::from_millis(16000));
+    kadc.dump_state("state_dumps/self.json");
 
     debug!("Done initial setup");
 

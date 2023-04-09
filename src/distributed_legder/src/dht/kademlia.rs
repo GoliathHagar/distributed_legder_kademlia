@@ -516,7 +516,7 @@ impl KademliaDHT{
             let kad = self.clone();
             let payload = (key.clone(), value.clone());
 
-            std::thread::spawn(move || {
+            thread::spawn(move || {
                 kad.store(payload,node )
             });
         }
@@ -539,7 +539,7 @@ impl KademliaDHT{
 
     }
 
-    pub fn dump_state(self : Arc<Self>, path : &str){
+    pub fn dump_state(&self, path : &str){
         if let Err(_) = create_dir_all("state_dumps"){
             error!("Unable to create state dumps diretory");
             return;
@@ -597,22 +597,22 @@ impl KademliaDHT{
                     "id": format!("{:?}", self.node.id),
                 },
                 "routes": {
-                    "node": {
+                    /*"node": {
                         "ip": routes.node.ip,
                         "port": routes.node.port,
                         "id": format!("{:?}", routes.node.id),
-                    },
+                    },*/
                     "kbuckets": parsed_buckets,
                 },
                 "store": parsed_store,
                 "rpc": {
                     "socket": format!("{:?}", self.service.socket),
                     "awaiting_response": format!("{:?}", self.service.awaiting_response.lock().unwrap()),
-                    "node": {
+                    /*"node": {
                         "ip": self.service.node.ip,
                         "port": self.service.node.port,
                         "id": format!("{:?}", self.service.node.id),
-                    },
+                    },*/
                 }
             }
         );
