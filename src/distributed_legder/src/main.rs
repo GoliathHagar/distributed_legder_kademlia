@@ -30,15 +30,15 @@ fn main() {
     let bootstrap_node = Node::new(get_local_ip().unwrap_or("0.0.0.0".to_string()),8080);
 
     info!("{}",serde_json::to_string(&data).unwrap());
-/*
-    data.data=Rpc::FindNode(Key::new("t".to_string()));
-    info!("{}",serde_json::to_string(&data).unwrap());
+    /*
+        data.data=Rpc::FindNode(Key::new("t".to_string()));
+        info!("{}",serde_json::to_string(&data).unwrap());
 
-    data.data=Rpc::FindValue("test".to_string());
-    info!("{}",serde_json::to_string(&data).unwrap());
+        data.data=Rpc::FindValue("test".to_string());
+        info!("{}",serde_json::to_string(&data).unwrap());
 
-    data.data=Rpc::Store("k".to_string(), "v".to_string());
-    info!("{}",serde_json::to_string(&data).unwrap());*/
+        data.data=Rpc::Store("k".to_string(), "v".to_string());
+        info!("{}",serde_json::to_string(&data).unwrap());*/
 
     //let kad_bootstrap = KademliaDHT::new(bootstrap_node.clone(),None);
     let kad = KademliaDHT::new(current_node.clone(),Some(bootstrap_node.clone()));
@@ -86,3 +86,15 @@ fn main() {
 
 
 }
+
+
+/*
+    let mut blockchain = Blockchain::new();
+    blockchain.add_block("This is the first block".to_string());
+    blockchain.add_block("This is the second block".to_string());
+    blockchain.add_block("This is the third block".to_string());
+
+    println!("Is the blockchain valid? {}", blockchain.is_valid());
+ */
+
+
