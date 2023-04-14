@@ -1,3 +1,4 @@
+
 pub struct Block {
     index: u64,            // Index of the block in the blockchain
     timestamp: u64,        // Time when the block was created

@@ -85,7 +85,7 @@ impl RoutingTable{
         let mut closests : Vec<RoutingDistance> = Vec::with_capacity(capacity);
 
         let mut bucket_index : usize = self.node_find_bucket_index(key);
-        let mut bucket_index_reverse = if bucket_index  > 0 {bucket_index -1} else { 0 };
+        let mut bucket_index_reverse = bucket_index;
 
         //search forward (closests)
         while closests.len() < capacity && bucket_index < self.buckets.len() -1 {
@@ -98,12 +98,13 @@ impl RoutingTable{
         }
 
         //search backwards (farthest)
-        while closests.len() < capacity &&  bucket_index_reverse >= 0 {
+        while closests.len() < capacity &&  bucket_index_reverse > 0 {
+            bucket_index_reverse -= 1;
+
             for nd in &self.buckets[bucket_index_reverse].nodes {
                 closests.push(RoutingDistance(nd.clone(), nd.id.distance(&key) ))
             }
 
-            bucket_index_reverse -= 1;
         }
 
         closests.sort_by(
