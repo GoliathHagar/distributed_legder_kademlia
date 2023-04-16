@@ -1,13 +1,5 @@
-
-pub struct Block {
-    index: u64,            // Index of the block in the blockchain
-    timestamp: u64,        // Time when the block was created
-    data: String,          // Data stored in the block
-    previous_hash: String, // Hash of the previous block in the blockchain
-    hash: String,          // Hash of the current block
-}
-
-use crypto_hash::{Digest, Sha256};
+/*use sha2::{Sha256,Digest};
+use crate::blockchain::block::Block;
 
 fn calculate_hash(block: &Block) -> String {
     let mut hasher = Sha256::new();
@@ -65,3 +57,4 @@ impl Blockchain {
     }
 }
 
+*/

@@ -1,0 +1,74 @@
+@startuml
+'https://plantuml.com/class-diagram
+    struct Node {
+        + id : Key
+        + ip : String
+        + port : u16
+
+        + new(String, u16) -> Self
+        + get_adrress(&self) -> String
+
+    }
+
+    struct Key {
+        + [u8: 32]
+
+        + new(String) -> Self
+        + distance(&self, key: Key) -> Self
+    }
+
+    enum DatagramType {
+        + REQUEST,
+        + RESPONSE,
+        + KILL
+    }
+
+  class Buckets{
+    - Array<Node> nodes
+    - int size
+
+    + findNodeByKey(Key key)
+  }
+
+  class RoutingTable{
+   - Node currentNode
+   - Array<Bucket> kbuckets
+
+   + getNodeBucketGroup(key)
+   + addNode(Key)
+   + removeNode(Key)
+   + updateNode(Key)
+
+  }
+
+  enum Rpc {
+      + Ping(),
+      + Store(String, String),
+      + FindNode(Key),
+      + FindValue(String),
+
+      + Pong(),
+      + FindNodeReply(Vec<Node>),
+      + FindValueReply(String, String),
+  }
+
+  class Server{
+    - Node currentNode
+    - handleRequest()
+  }
+
+  class Client{
+    makeRequest(Node, Message)
+  }
+
+  interface ReputationAndThruth{
+  - Int successsullyInteration
+  - Int failedIntertion
+
+  + Int distance(Key, Key)
+  }
+
+
+
+
+@enduml

@@ -1,52 +1,55 @@
-use std::sync::Arc;
-use std::{str, thread};
-use std::thread::JoinHandle;
-use log::{debug, error, info, warn};
 use crate::constants::fixed_sizes::UDP_STREAMING_BUFFER_SIZE;
 use crate::dht::kademlia::KademliaDHT;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::rpc_socket::RpcSocket;
+use log::{debug, error, info, warn};
+use std::sync::Arc;
+use std::thread::JoinHandle;
+use std::{str, thread};
 
-#[derive(Clone, Debug)] pub struct Server {
+#[derive(Clone, Debug)]
+pub struct Server {
     pub app: Arc<KademliaDHT>,
 }
 
-
-impl Server{
-    pub fn new(app : Arc<KademliaDHT>) -> Server {
-        Self{
-            app
-        }
+impl Server {
+    pub fn new(app: Arc<KademliaDHT>) -> Server {
+        Self { app }
     }
 
-    pub fn start_service(self) -> JoinHandle<()> { //todo: insure only one listiner a time for a node
-        info!("Initializing node services at {}", self.app.node.get_address());
+    pub fn start_service(self) -> JoinHandle<()> {
+        //todo: insure only one listiner a time for a node
+        info!(
+            "Initializing node services at {}",
+            self.app.node.get_address()
+        );
 
         let app = self.app.clone();
         thread::spawn(move || {
-            let mut buffer =  [0u8; UDP_STREAMING_BUFFER_SIZE];
+            let mut buffer = [0u8; UDP_STREAMING_BUFFER_SIZE];
 
             loop {
-                let (size, src_addr) = match app.service.socket
-                    .recv_from(&mut buffer) {
+                let (size, src_addr) = match app.service.socket.recv_from(&mut buffer) {
                     Ok((sz, src)) => (sz, src),
                     Err(e) => {
-                        error!("Failed to receive data from [{}]",e.to_string());
+                        error!("Failed to receive data from [{}]", e.to_string());
                         continue;
                     }
                 };
 
-                debug!("Source address {} Destination address {}", src_addr, app.service.node.get_address());
+                debug!(
+                    "Source address {} Destination address {}",
+                    src_addr,
+                    app.service.node.get_address()
+                );
 
-                let payload =
-                    String::from(match str::from_utf8(&buffer[..size]) {
-                        Ok(utf) => utf,
-                        Err(_) => {
-                            error!("Unable to parse string from received bytes");
-                            continue;
-                        }
-                    });
-
+                let payload = String::from(match str::from_utf8(&buffer[..size]) {
+                    Ok(utf) => utf,
+                    Err(_) => {
+                        error!("Unable to parse string from received bytes");
+                        continue;
+                    }
+                });
 
                 let mut data: Datagram = match serde_json::from_str(&payload) {
                     Ok(d) => d,
@@ -69,59 +72,60 @@ impl Server{
 
                 debug!("Received payload [{:?}]", data);
 
-                data.source= src_addr.to_string();
+                data.source = src_addr.to_string();
 
                 match data.data_type {
-                    DatagramType::REQUEST => {
-                        Server::request_handler(app.clone(), data)
+                    DatagramType::REQUEST => Server::request_handler(app.clone(), data),
+                    DatagramType::RESPONSE => self.clone().response_handler(data),
+                    DatagramType::KILL => {
+                        break;
                     }
-                    DatagramType::RESPONSE => {
-                        self.clone().response_handler(data)
-
-                    }
-                    DatagramType::KILL => {break;}
                 }
             }
         })
-
     }
 
-    fn reply(rpc : Arc<RpcSocket>, msg: &Datagram) {
+    fn reply(rpc: Arc<RpcSocket>, msg: &Datagram) {
         let encoded = serde_json::to_string(msg)
-            .map_err(|_| error!("Unable to serialize message")).unwrap();
+            .map_err(|_| error!("Unable to serialize message"))
+            .unwrap();
 
-       if let Err(_) =  rpc.socket.send_to(&encoded.as_bytes(), &msg.destination) {
-          error!(" Error while sending message to specified address")
-       };
+        if let Err(_) = rpc.socket.send_to(&encoded.as_bytes(), &msg.destination) {
+            error!(" Error while sending message to specified address")
+        };
     }
 
-    fn request_handler( app: Arc<KademliaDHT>,  payload: Datagram, ){
+    fn request_handler(app: Arc<KademliaDHT>, payload: Datagram) {
         thread::spawn(move || {
-             match KademliaDHT::handle_request(app.clone(),payload.clone()){
-                Some(payload) =>{
-                    Server::reply(app.service.clone(),&Datagram {
-                        token_id : payload.token_id,
-                        data_type: DatagramType::RESPONSE,
-                        source:app.node.get_address(),
-                        destination: payload.source,
-                        data: payload.data
-                    });
-                },
-                 None => {
-                     error!("Unable to generate a response for [{:?}]", payload.data);
-                 }
+            match KademliaDHT::handle_request(app.clone(), payload.clone()) {
+                Some(payload) => {
+                    Server::reply(
+                        app.service.clone(),
+                        &Datagram {
+                            token_id: payload.token_id,
+                            data_type: DatagramType::RESPONSE,
+                            source: app.node.get_address(),
+                            destination: payload.source,
+                            data: payload.data,
+                        },
+                    );
+                }
+                None => {
+                    error!("Unable to generate a response for [{:?}]", payload.data);
+                }
             };
-
         });
-
     }
 
     fn response_handler(self, payload: Datagram) {
         thread::spawn(move || {
             let app = self.app.clone();
-            let mut await_response = app.service.awaiting_response
+            let mut await_response = app
+                .service
+                .awaiting_response
                 .lock()
-                .map_err(|_| error!("Failed to acquire lock")).unwrap();
+                .map_err(|_| error!("Failed to acquire lock"))
+                .unwrap();
 
             let token = payload.token_id.clone();
 
@@ -137,9 +141,5 @@ impl Server{
                 await_response.remove(&token);
             }
         });
-
     }
-
-
-
 }
