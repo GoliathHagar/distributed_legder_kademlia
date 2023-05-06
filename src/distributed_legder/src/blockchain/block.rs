@@ -1,4 +1,6 @@
+use serde::{Serialize, Deserialize};
 
+#[derive(Serialize)]
 pub struct Block {
     pub index: u64,            // Index of the block in the blockchain
     pub timestamp: u64,        // Time when the block was created
