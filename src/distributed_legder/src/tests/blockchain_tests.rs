@@ -47,8 +47,10 @@ fn test_calculate_hash() {
         timestamp: 0,
         nonce: 0,
         data: "Genesis block".to_string(),
+        transactions: vec![],
         previous_hash: "0".to_string(),
         hash: "".to_string(),
+        proof: 0,
     };
     let expected_hash = "7e240de74fb1ed08fa08d38063f6a6a91462a815".to_string();
     let actual_hash = calculate_hash(&block);
