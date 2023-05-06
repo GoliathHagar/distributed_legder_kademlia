@@ -497,7 +497,9 @@ impl KademliaDHT {
     }
 
     pub fn put(self: Arc<Self>, key: String, value: String) {
-        let candidates = self.clone().node_lookup(&Key::new(key.clone()));
+        let mut candidates = self.clone().node_lookup(&Key::new(key.clone()));
+        let s = RoutingDistance(self.node.clone(), self.node.clone().id.distance_self());
+        candidates.push(s);
 
         for RoutingDistance(node, _) in candidates {
             let kad = self.clone();
@@ -505,6 +507,7 @@ impl KademliaDHT {
 
             thread::spawn(move || kad.store(payload, node));
         }
+
     }
 
     pub fn get(self: Arc<Self>, key: String) -> Option<String> {

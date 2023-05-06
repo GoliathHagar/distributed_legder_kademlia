@@ -39,6 +39,10 @@ impl Key {
         d
     }
 
+    pub fn distance_self(&self) -> [u8; KEY_SIZE] {
+        [0; KEY_SIZE]
+    }
+
     pub fn thrust(&self) -> usize {
         //nd = od × b + (1 − b) ×1/t
         0

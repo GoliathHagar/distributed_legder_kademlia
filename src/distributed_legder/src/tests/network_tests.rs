@@ -124,7 +124,7 @@ fn test_find_value_not_store() {
         .clone()
         .make_call(
             Rpc::FindValue("test".to_string()),
-            Node::new("127.0.0.1".to_string(), 8081),
+            current_node,
         )
         .recv()
         .unwrap();
@@ -133,7 +133,14 @@ fn test_find_value_not_store() {
 
     threa1.join().expect("thead 1 dead");
 
-    assert_eq!(rec, None);
+    let data = match rec.unwrap().data {
+        Rpc::FindValueReply(k, v) => {
+            Some((k,v))
+        }
+        _ => None
+    };
+
+    assert_eq!(None, data );
 }
 #[test]
 fn test_find_value_store_successful() {
@@ -169,8 +176,8 @@ fn test_find_value_store_successful() {
     let rec: Option<Datagram> = client
         .clone()
         .make_call(
-            Rpc::FindValue("test".to_string()),
-            Node::new("127.0.0.1".to_string(), 8082),
+            Rpc::FindValue(key.clone()),
+            current_node,
         )
         .recv()
         .unwrap();
@@ -179,9 +186,10 @@ fn test_find_value_store_successful() {
 
     threa1.join().expect("thead 1 dead");
 
+    let data = rec.unwrap().data;
+
     assert_eq!(
-        rec.unwrap().data,
-        Rpc::FindValueReply(key.clone(), value.clone())
+        Rpc::FindValueReply(key.clone(), value.clone()), data
     );
 }
 #[test]
@@ -222,5 +230,5 @@ fn test_store() {
 
     threa1.join().expect("thead 1 dead");
 
-    assert_eq!(rec, None);
+    assert_eq!(rec.unwrap().data, Rpc::Pong);
 }
