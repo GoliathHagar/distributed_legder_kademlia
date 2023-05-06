@@ -1,6 +1,6 @@
 use distributed_legder::constants::utils::get_local_ip;
 use distributed_legder::dht::kademlia::KademliaDHT;
-use distributed_legder::dht::rpc::Rpc;
+use distributed_legder::network::rpc::Rpc;
 use distributed_legder::network::datagram::{Datagram, DatagramType};
 use distributed_legder::network::key::Key;
 use distributed_legder::network::node::Node;

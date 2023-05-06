@@ -3,7 +3,7 @@ pub const BYTE: usize = 8;
 
 // 256 bits --> 32 bytes
 // 160 bits --> 20 bytes (require alter hasher in utils.rs and key.rs)
-pub const KEY_SIZE: usize = 20;
+pub const KEY_SIZE: usize = 32;
 
 // number entries in a list
 // 256 bits --> 32 bytes

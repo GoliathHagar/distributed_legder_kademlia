@@ -1,6 +1,6 @@
 use crate::constants::fixed_sizes::{ALPHA, DUMP_STATE_TIMEOUT, K_BUCKET_SIZE, REPUBLISH_TIMEOUT};
 use crate::dht::routing_table::{Bucket, RoutingDistance, RoutingTable};
-use crate::dht::rpc::Rpc;
+use crate::network::rpc::Rpc;
 use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::key::Key;

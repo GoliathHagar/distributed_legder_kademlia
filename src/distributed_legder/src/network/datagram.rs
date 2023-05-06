@@ -1,4 +1,4 @@
-use crate::dht::rpc::Rpc;
+use crate::network::rpc::Rpc;
 use crate::network::key::Key;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;

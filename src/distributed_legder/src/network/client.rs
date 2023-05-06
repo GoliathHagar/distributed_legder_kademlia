@@ -1,5 +1,5 @@
 use crate::constants::fixed_sizes::RESPONSE_TIMEOUT;
-use crate::dht::rpc::Rpc;
+use crate::network::rpc::Rpc;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::key::Key;
 use crate::network::node::Node;

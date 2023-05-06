@@ -1,5 +1,5 @@
 use crate::dht::kademlia::KademliaDHT;
-use crate::dht::rpc::Rpc;
+use crate::network::rpc::Rpc;
 use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::key::Key;
@@ -39,8 +39,8 @@ fn two_way_handshake_ping_pong() {
     let kad = KademliaDHT::new(current_node.clone(), None);
     let kad2 = KademliaDHT::new(remote_node.clone(), None);
 
-    let threa1 = kad.clone().init();
-    let threa2 = kad2.clone().init();
+    let threa1 = kad.clone().init(None);
+    let threa2 = kad2.clone().init(None);
 
     let client = Client::new(kad.service.clone());
     let client2 = Client::new(kad2.service.clone());
@@ -116,7 +116,7 @@ fn test_find_value_not_store() {
 
     let kad = KademliaDHT::new(current_node.clone(), None);
 
-    let threa1 = kad.clone().init();
+    let threa1 = kad.clone().init(None);
 
     let client = Client::new(kad.service.clone());
 
@@ -162,7 +162,7 @@ fn test_find_value_store_successful() {
 
     Arc::new(kad.clone()).put(key.clone(), value.clone());
 
-    let threa1 = kad.clone().init();
+    let threa1 = kad.clone().init(None);
 
     let client = Client::new(kad.service.clone());
 
@@ -205,7 +205,7 @@ fn test_store() {
 
     let kad = KademliaDHT::new(current_node.clone(), None);
 
-    let threa1 = kad.clone().init();
+    let threa1 = kad.clone().init(None);
 
     let client = Client::new(kad.service.clone());
 

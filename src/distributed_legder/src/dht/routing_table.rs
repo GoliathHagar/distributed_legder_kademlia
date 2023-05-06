@@ -1,5 +1,5 @@
 use crate::constants::fixed_sizes::{ENABLE_SECURITY, KEY_SIZE, K_BUCKET_SIZE, N_BUCKETS};
-use crate::dht::rpc::Rpc;
+use crate::network::rpc::Rpc;
 use crate::network::client::Client;
 use crate::network::key::Key;
 use crate::network::node::Node;

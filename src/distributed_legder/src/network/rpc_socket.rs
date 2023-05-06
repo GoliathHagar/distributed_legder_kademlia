@@ -20,7 +20,7 @@ impl RpcSocket {
         let socket = match UdpSocket::bind(&host) {
             Ok(s) => s,
             Err(e) => {
-                error!("Error while binding UdpSocket to specified addr {}", host);
+                error!("UdpSocket to specified addr {} -> {}", host, e.to_string());
                 panic!("{}", e.to_string())
             }
         };

@@ -2,7 +2,7 @@ use crate::constants::fixed_sizes::{KEY_SIZE, N_BUCKETS};
 use crate::constants::utils::get_local_ip;
 use crate::dht::kademlia::KademliaDHT;
 use crate::dht::routing_table::{Bucket, RoutingTable};
-use crate::dht::rpc::Rpc;
+use crate::network::rpc::Rpc;
 use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::key::Key;
@@ -123,10 +123,10 @@ fn routing_table_building() {
 
     let client = Client::new(boot_stap_node.service.clone());
 
-    let t0 = boot_stap_node.clone().init();
-    let t1 = contact1.init();
-    let t2 = contact2.init();
-    let t3 = contact3.init();
+    let t0 = boot_stap_node.clone().init(None);
+    let t1 = contact1.init(None);
+    let t2 = contact2.init(None);
+    let t3 = contact3.init(None);
 
     //
 
