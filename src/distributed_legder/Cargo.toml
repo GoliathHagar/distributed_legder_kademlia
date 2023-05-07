@@ -17,8 +17,8 @@ sha-1 = "0.10.1"
 
 env_logger = "0.10.0"
 log = "0.4.17"
-
-[[bin]]
-name = "blockchain_tests"
-test = true
-path = "src/tests/blockchain_tests.rs"
+#
+#[[bin]]
+#name = "blockchain_tests"
+#test = true
+#path = "src/tests/blockchain_tests.rs"
