@@ -167,9 +167,10 @@ fn test_find_value_store_successful() {
 
     let value = "this is a test".to_string();
 
-    Arc::new(kad.clone()).put(key.clone(), value.clone());
 
     let threa1 = kad.clone().init(None);
+
+    Arc::new(kad.clone()).put(key.clone(), value.clone());
 
     let client = Client::new(kad.service.clone());
 

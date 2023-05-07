@@ -11,7 +11,8 @@ use log::{error, info};
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fs::create_dir_all;
 use std::io::Write;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, mpsc, Mutex};
+use std::sync::mpsc::Receiver;
 use std::thread;
 use std::thread::JoinHandle;
 
@@ -99,6 +100,7 @@ impl KademliaDHT {
             Rpc::FindNode(_) => proto.find_node_reply(payload),
             Rpc::FindValue(_) => proto.find_value_reply(payload),
             Rpc::Store(_, _) => proto.store_reply(payload),
+            Rpc::Multicasting(_, _) => proto.publish_multicast(payload),
             _ => None, //reply payload ignored
         };
 
@@ -188,6 +190,30 @@ impl KademliaDHT {
 
     pub(self) fn store_reply(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
         //Todo: store
+        if let Rpc::Store(k, value) = payload.data {
+            let mut store_value = match self.store_values.lock() {
+                Ok(sv) => sv,
+                Err(_) => {
+                    error!("Failed to acquire lock on Store Values");
+                    return None;
+                }
+            };
+
+            store_value.insert(k.clone(), value.clone());
+
+            return Some(Datagram {
+                token_id: payload.token_id,
+                source: payload.source,
+                destination: payload.destination,
+                data_type: DatagramType::RESPONSE,
+                data: Rpc::Pong,
+            });
+        }
+        None
+    }
+
+    pub(self) fn publish_multicast(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
+
         if let Rpc::Store(k, value) = payload.data {
             let mut store_value = match self.store_values.lock() {
                 Ok(sv) => sv,
