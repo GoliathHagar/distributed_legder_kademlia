@@ -1,8 +1,11 @@
-use sha2::{Sha256, Digest};
+use sha2::Sha256;
 use hex::encode;
-use std::time::{UNIX_EPOCH, SystemTime};
+use std::time::{SystemTime, UNIX_EPOCH};
 use crate::blockchain::block::Block;
 use crate::blockchain::transaction::Transaction;
+use crate::blockchain::consensus::ConsensusAlgorithm;
+use std::convert::TryInto;
+use sha1::Digest;
 
 pub fn calculate_hash(block: &Block) -> String {
     let mut hasher = Sha256::new();
@@ -15,13 +18,15 @@ pub fn calculate_hash(block: &Block) -> String {
     hex::encode(hash)
 }
 
+
 pub struct Blockchain {
-    pub(crate) blocks: Vec<Block>,
+    pub blocks: Vec<Block>,
     current_transactions: Vec<Transaction>,
+    consensus_algorithm: ConsensusAlgorithm,
 }
 
 impl Blockchain {
-    pub fn new() -> Self {
+    pub fn new(consensus_algorithm: ConsensusAlgorithm) -> Self {
         let genesis_block = Block {
             index: 0,
             timestamp: 0,
@@ -35,15 +40,31 @@ impl Blockchain {
         let hash = calculate_hash(&genesis_block);
         let genesis_block = Block { hash, ..genesis_block };
         let blocks = vec![genesis_block];
-        Self { blocks, current_transactions: vec![] }
+        Self {
+            blocks,
+            current_transactions: vec![],
+            consensus_algorithm,
+        }
     }
 
     pub fn add_block(&mut self, data: String) {
         let previous_block = self.blocks.last().unwrap();
         let index = self.blocks.len() as u64;
-        let timestamp = std::time::SystemTime::now().duration_since(std::time::SystemTime::UNIX_EPOCH).unwrap().as_secs();
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
         let previous_hash = previous_block.hash.clone();
-        let block = Block { index, timestamp, nonce: 0, proof: previous_block.proof + 1, transactions: self.current_transactions.clone(), previous_hash, hash: "".to_string(), data };
+        let block = Block {
+            index,
+            timestamp,
+            nonce: 0,
+            proof: previous_block.proof + 1,
+            transactions: self.current_transactions.clone(),
+            previous_hash,
+            hash: "".to_string(),
+            data,
+        };
         let hash = calculate_hash(&block);
         let block = Block { hash, ..block };
         self.blocks.push(block);
@@ -70,8 +91,8 @@ impl Blockchain {
         true
     }
 
-    // Add a new transaction to the transaction pool
-    pub fn add_transaction(&mut self, sender: String, recipient: String, amount: f32) {
+    /// Add a new transaction to the transaction pool
+    pub fn add_transaction(&mut self, sender: String, recipient: String, amount: f64) {
         let transaction = Transaction {
             sender,
             recipient,
@@ -80,13 +101,15 @@ impl Blockchain {
         self.current_transactions.push(transaction);
     }
 
-    // Mine a new block
+    /// Mine a new block
     pub fn mine_block(&mut self, miner_address: String) -> Result<(), String> {
         let last_block = self.blocks.last().clone().unwrap();
-        let proof = self.proof_of_work(last_block.proof.into())?;
+        let proof = match self.consensus_algorithm {
+            ConsensusAlgorithm::ProofOfWork => self.proof_of_work(last_block.proof as u128)?,
+            ConsensusAlgorithm::DelegatedProofOfStake => self.delegated_proof_of_stake()?,
+        };
         let previous_hash = calculate_hash(&last_block);
 
-        // Create a new block with the mined proof and the transactions in the current transaction pool
         let new_block = Block {
             index: last_block.index + 1,
             timestamp: SystemTime::now()
@@ -126,6 +149,16 @@ impl Blockchain {
         hasher.update(guess.as_bytes());
         let guess_hash = hasher.finalize();
         guess_hash.starts_with(&[0, 0, 0, 0])
+    }
+
+    fn delegated_proof_of_stake(&self) -> Result<u128, String> {
+        // Logic for delegated proof of stake
+
+        Ok(0)
+    }
+
+    pub fn set_consensus_algorithm(&mut self, consensus_algorithm: ConsensusAlgorithm) {
+        self.consensus_algorithm = consensus_algorithm;
     }
 
 }

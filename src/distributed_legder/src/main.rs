@@ -6,10 +6,31 @@ use distributed_legder::network::key::Key;
 use distributed_legder::network::node::Node;
 use log::{debug, info};
 use std::sync::Arc;
+use distributed_legder::blockchain::blockchain::Blockchain;
+use distributed_legder::blockchain::consensus::ConsensusAlgorithm;
 
 fn main() {
     //let b = Block();
 
+    let consensus_algorithm = ConsensusAlgorithm::ProofOfWork;
+    let mut blockchain = Blockchain::new(consensus_algorithm);
+
+    // Add blocks
+    blockchain.add_block("Block 1".to_string());
+    blockchain.add_block("Block 2".to_string());
+    blockchain.add_block("Block 3".to_string());
+
+    // Perform transactions
+    blockchain.add_transaction("Sender 1".to_string(), "Recipient 1".to_string(), 10.0);
+    blockchain.add_transaction("Sender 2".to_string(), "Recipient 2".to_string(), 5.0);
+
+    // Mine a new block
+    let miner_address = "Miner Address".to_string();
+    blockchain.mine_block(miner_address).unwrap();
+
+
+
+    //
     let data = Datagram {
         data_type: DatagramType::REQUEST,
         token_id: Key::new("test".to_string()),
@@ -80,6 +101,12 @@ fn main() {
                                          threa2.join().expect("thead: dead");
                                          threa3.join().expect("thead: dead");
                                          t0.join().expect("thead: dead");*/
+
+
+
+
+    // Print the blockchain
+   // println!("{:#?}", blockchain)
 }
 
 /*
