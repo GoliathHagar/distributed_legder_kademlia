@@ -18,7 +18,7 @@ impl Server {
     }
 
     pub fn start_service(self) -> JoinHandle<()> {
-        //todo: insure only one listiner a time for a node
+        //todo: insure only one listener a time for a node
         info!(
             "Initializing node services at {}",
             self.app.node.get_address()

@@ -529,8 +529,6 @@ impl KademliaDHT {
 
     pub fn put(self: Arc<Self>, key: String, value: String) {
         let mut candidates = self.clone().node_lookup(&self.node.id.clone());
-        let s = RoutingDistance(self.node.clone().as_ref().clone(), self.node.clone().id.distance_self());
-        candidates.push(s);
 
         for RoutingDistance(node, _) in candidates {
             let kad = self.clone();
