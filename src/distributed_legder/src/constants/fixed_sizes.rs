@@ -21,6 +21,7 @@ pub const UDP_STREAMING_BUFFER_SIZE: usize = 8192;
 
 // response timeout 5000ms
 pub const RESPONSE_TIMEOUT: u64 = 8000;
+pub const BOOTSTRAP_TIMEOUT: u64 = 3600000;
 
 // Republish store values timeout  = 60s
 pub const REPUBLISH_TIMEOUT: u64 = 60 * 60000;

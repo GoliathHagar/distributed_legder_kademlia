@@ -22,11 +22,12 @@ pub struct KademliaDHT {
     pub store_values: Arc<Mutex<HashMap<String, String>>>,
     pub service: Arc<RpcSocket>,
     pub node: Arc<Node>,
+    pub bt: Option<Node>,
 }
 
 impl KademliaDHT {
     pub fn new(node: Node, bootstrap_node: Option<Node>) -> KademliaDHT {
-        let routing = RoutingTable::new(Arc::new(node.clone()), bootstrap_node); //Todo: Routing Table
+        let routing = RoutingTable::new(Arc::new(node.clone()), bootstrap_node.clone()); //Todo: Routing Table
         let rpc = RpcSocket::new(node.clone());
 
         info!("Node id [{:?}] created read to start", node.id);
@@ -36,6 +37,7 @@ impl KademliaDHT {
             store_values: Arc::new(Mutex::new(HashMap::new())),
             service: Arc::new(rpc),
             node: Arc::new(node.clone()),
+            bt: bootstrap_node
         }
     }
 
@@ -72,6 +74,10 @@ impl KademliaDHT {
         let server = Server::new(kdl.clone());
         let server_thread = server.start_service();
 
+        if let Some(bt)=kdl.bt.clone(){
+            Client::new(kdl.service.clone())
+                .make_call(Rpc::Bootstrapping("ip:salt".to_string()),bt);
+        }
         kdl.node_lookup(&self.node.id);
 
         server_thread
