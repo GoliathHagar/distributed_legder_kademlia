@@ -152,7 +152,7 @@ fn routing_table_building() {
     Arc::new(contact3.clone()).put("key21".to_string(), "val jkfssgdl".to_string());
     Arc::new(contact4.clone()).put("key31".to_string(), "vall".to_string());
 
-    thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
+    thread::sleep(std::time::Duration::from_millis(3*DUMP_STATE_TIMEOUT));
 
     client.clone().datagram_request(Datagram {
         data_type: DatagramType::KILL,

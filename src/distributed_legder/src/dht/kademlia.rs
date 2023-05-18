@@ -96,9 +96,7 @@ impl KademliaDHT {
         let proto = app.clone();
 
         let resp: Option<Datagram> = match req.data {
-            Rpc::Multicasting(_, _) => proto.multicast_reply(payload),
-
-
+            Rpc::Multicasting(_, _) => proto.handel_multicast(payload),
             Rpc::Ping => proto.ping_reply(payload),
             Rpc::FindNode(_) => proto.find_node_reply(payload),
             Rpc::FindValue(_) => proto.find_value_reply(payload),
@@ -215,7 +213,7 @@ impl KademliaDHT {
         None
     }
 
-    pub(self) fn multicast_reply(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
+    pub(self) fn handel_multicast(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
 
 
         return Some(Datagram {
