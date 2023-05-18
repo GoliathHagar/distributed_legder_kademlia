@@ -26,7 +26,7 @@ pub const RESPONSE_TIMEOUT: u64 = 8000;
 pub const REPUBLISH_TIMEOUT: u64 = 60 * 60000;
 
 // state save disk timeout 10000ms
-pub const DUMP_STATE_TIMEOUT: u64 = 10000;
+pub const DUMP_STATE_TIMEOUT: u64 = 6000;
 
 //Trust and reputation
 pub const ENABLE_THRUST_MECHANISM: bool = false;

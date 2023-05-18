@@ -24,7 +24,7 @@ fn main() {
 
     let current_node = Node::new(get_local_ip().unwrap_or("0.0.0.0".to_string()), 1432);
 
-    let bootstrap_node = Node::new(get_local_ip().unwrap_or("0.0.0.0".to_string()), 8080);
+    let bootstrap_node = Node::new(get_local_ip().unwrap_or("192.168.153.8".to_string()), 1432);
 
     info!("{}", serde_json::to_string(&data).unwrap());
 
@@ -37,6 +37,12 @@ fn main() {
     thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
     Arc::new(kadc.clone()).put(
         "test00".to_string(),
+        "It works, this value was stored successifully".to_string(),
+    );
+    thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
+
+    Arc::new(kadc.clone()).put(
+        "claudia".to_string(),
         "It works, this value was stored successifully".to_string(),
     );
 
