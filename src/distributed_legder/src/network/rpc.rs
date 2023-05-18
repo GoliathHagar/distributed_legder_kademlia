@@ -10,10 +10,8 @@ pub enum Rpc {
     FindValue(String),
 
     Multicasting(String, String),
-    Bootstrapping(String),
 
     Pong,
     FindNodeReply(Vec<Node>),
     FindValueReply(String, String),
-    BootstrappingReply(String)
 }

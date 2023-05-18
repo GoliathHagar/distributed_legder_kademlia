@@ -22,7 +22,6 @@ pub struct KademliaDHT {
     pub store_values: Arc<Mutex<HashMap<String, String>>>,
     pub service: Arc<RpcSocket>,
     pub node: Arc<Node>,
-    pub bt: Option<Node>,
 }
 
 impl KademliaDHT {
@@ -37,13 +36,11 @@ impl KademliaDHT {
             store_values: Arc::new(Mutex::new(HashMap::new())),
             service: Arc::new(rpc),
             node: Arc::new(node.clone()),
-            bt: bootstrap_node
         }
     }
 
     pub fn init(self, path: Option<String>) -> JoinHandle<()> {
         let kdl = Arc::new(self.clone());
-        let ss =   self.start_server();
 
         let kad = kdl.clone();
         thread::spawn(move || loop {
@@ -66,7 +63,7 @@ impl KademliaDHT {
 
         }
 
-        ss
+        self.start_server()
     }
 
     fn start_server(self) -> JoinHandle<()> {
@@ -74,10 +71,6 @@ impl KademliaDHT {
         let server = Server::new(kdl.clone());
         let server_thread = server.start_service();
 
-        if let Some(bt)=kdl.bt.clone(){
-            Client::new(kdl.service.clone())
-                .make_call(Rpc::Bootstrapping("ip:salt".to_string()),bt);
-        }
         kdl.node_lookup(&self.node.id);
 
         server_thread
@@ -92,6 +85,7 @@ impl KademliaDHT {
             }
         };
 
+
         for (key, value) in &*store_value {
             self.clone().put(key.to_string(), value.to_string());
         }
@@ -102,7 +96,6 @@ impl KademliaDHT {
         let proto = app.clone();
 
         let resp: Option<Datagram> = match req.data {
-            Rpc::Bootstrapping(_) => proto.bootstrapping_reply(payload),
             Rpc::Multicasting(_, _) => proto.multicast_reply(payload),
 
 

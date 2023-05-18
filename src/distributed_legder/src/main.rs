@@ -34,7 +34,7 @@ fn main() {
 
     let threa1 = kad.init(Some("state_dumps/self.json".to_string()));
 
-    thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
+    thread::sleep(std::time::Duration::from_millis(2*DUMP_STATE_TIMEOUT));
     Arc::new(kadc.clone()).put(
         "test00".to_string(),
         "It works, this value was stored successifully".to_string(),
