@@ -28,5 +28,9 @@ pub const REPUBLISH_TIMEOUT: u64 = 60 * 60000;
 // state save disk timeout 10000ms
 pub const DUMP_STATE_TIMEOUT: u64 = 10000;
 
-//enable skademlia thrust security mecanism
-pub const ENABLE_SECURITY: bool = false;
+//Trust and reputation
+pub const ENABLE_THRUST_MECHANISM: bool = true;
+pub const BALANCE_FACTOR: f64 = 0.65;
+pub const WEIGHT_REPUTATION : f64 = 0.2;
+pub const WEIGHT_RISK : f64 = 1.0- WEIGHT_REPUTATION as f64;
+

@@ -3,7 +3,7 @@ use crate::blockchain::blockchain::Blockchain;
 use crate::blockchain::blockchain::calculate_hash;
 
 #[test]
-fn test_new_blockchain() {
+fn  test_new_blockchain() {
     let blockchain = Blockchain::new();
     assert_eq!(blockchain.blocks.len(), 1);
     assert_eq!(blockchain.blocks[0].index, 0);

@@ -192,6 +192,9 @@ fn test_find_value_store_successful() {
     assert_eq!(
         Rpc::FindValueReply(key.clone(), value.clone()), data
     );
+    assert_eq!(
+        Rpc::FindNodeReply(Vec::new()), data
+    );
 }
 #[test]
 fn test_store() {

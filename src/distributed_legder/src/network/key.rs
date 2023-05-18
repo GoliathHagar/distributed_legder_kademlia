@@ -3,14 +3,13 @@ use crate::constants::utils::{calculate_sha1, calculate_sha256};
 use log::error;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Binary, Debug, Error, Formatter};
+use crate::network::node::ThrustAndReputation;
+
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Key(#[serde(with = "hex_serde")] pub [u8; KEY_SIZE]);
 
-struct ThrustAndReputation {
-    total_interaction: u32,
-    successfully_interaction: u32,
-}
+
 
 impl Key {
     pub fn new(input: String) -> Self {
@@ -43,9 +42,10 @@ impl Key {
         [0; KEY_SIZE]
     }
 
-    pub fn thrust(&self) -> usize {
+    pub fn thrust(&self, reputation: &ThrustAndReputation) -> f64 {
         //nd = od × b + (1 − b) ×1/t
-        0
+        // t
+        reputation.clone().calculate_thrust_factor()
     }
 }
 

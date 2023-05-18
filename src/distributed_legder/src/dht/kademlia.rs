@@ -11,8 +11,8 @@ use log::{error, info};
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fs::create_dir_all;
 use std::io::Write;
-use std::sync::{Arc, mpsc, Mutex};
-use std::sync::mpsc::Receiver;
+use std::ops::{Deref, Index};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
 
@@ -21,12 +21,12 @@ pub struct KademliaDHT {
     pub routing_table: Arc<Mutex<RoutingTable>>,
     pub store_values: Arc<Mutex<HashMap<String, String>>>,
     pub service: Arc<RpcSocket>,
-    pub node: Node,
+    pub node: Arc<Node>,
 }
 
 impl KademliaDHT {
     pub fn new(node: Node, bootstrap_node: Option<Node>) -> KademliaDHT {
-        let routing = RoutingTable::new(node.clone(), bootstrap_node); //Todo: Routing Table
+        let routing = RoutingTable::new(Arc::new(node.clone()), bootstrap_node); //Todo: Routing Table
         let rpc = RpcSocket::new(node.clone());
 
         info!("Node id [{:?}] created read to start", node.id);
@@ -35,7 +35,7 @@ impl KademliaDHT {
             routing_table: Arc::new(Mutex::new(routing)),
             store_values: Arc::new(Mutex::new(HashMap::new())),
             service: Arc::new(rpc),
-            node,
+            node: Arc::new(node.clone()),
         }
     }
 
@@ -96,11 +96,13 @@ impl KademliaDHT {
         let proto = app.clone();
 
         let resp: Option<Datagram> = match req.data {
+            Rpc::Bootstrapping(_) => proto.bootstrapping(payload),
+            Rpc::Multicasting(_, _) => proto.publish_multicast(payload),
             Rpc::Ping => proto.ping_reply(payload),
             Rpc::FindNode(_) => proto.find_node_reply(payload),
             Rpc::FindValue(_) => proto.find_value_reply(payload),
             Rpc::Store(_, _) => proto.store_reply(payload),
-            Rpc::Multicasting(_, _) => proto.publish_multicast(payload),
+
             _ => None, //reply payload ignored
         };
 
@@ -214,26 +216,28 @@ impl KademliaDHT {
 
     pub(self) fn publish_multicast(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
 
-        if let Rpc::Store(k, value) = payload.data {
-            let mut store_value = match self.store_values.lock() {
-                Ok(sv) => sv,
-                Err(_) => {
-                    error!("Failed to acquire lock on Store Values");
-                    return None;
-                }
-            };
 
-            store_value.insert(k.clone(), value.clone());
+        return Some(Datagram {
+            token_id: payload.token_id,
+            source: payload.source,
+            destination: payload.destination,
+            data_type: DatagramType::RESPONSE,
+            data: Rpc::Pong,
+        });
 
-            return Some(Datagram {
-                token_id: payload.token_id,
-                source: payload.source,
-                destination: payload.destination,
-                data_type: DatagramType::RESPONSE,
-                data: Rpc::Pong,
-            });
-        }
-        None
+    }
+
+    pub(self) fn bootstrapping(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
+
+
+        return Some(Datagram {
+            token_id: payload.token_id,
+            source: payload.source,
+            destination: payload.destination,
+            data_type: DatagramType::RESPONSE,
+            data: Rpc::Pong,
+        });
+
     }
 
     pub(self) fn node_lookup(self: Arc<Self>, key: &Key) -> Vec<RoutingDistance> {
@@ -421,7 +425,7 @@ impl KademliaDHT {
                     return true;
                 }
 
-                false
+                true
             }
             _ => {
                 routes.remove(&destination);
@@ -447,6 +451,7 @@ impl KademliaDHT {
         return match stored_pong {
             Ok(Some(payload)) => {
                 if let Rpc::Pong = payload.data {
+                    if destination.id.distance(&self.node.id) == destination.id.distance_self(){ return true;}// dont add self in routing table
                     routes.update(destination, Some(self.service.clone()));
                     return true;
                 }
@@ -523,8 +528,8 @@ impl KademliaDHT {
     }
 
     pub fn put(self: Arc<Self>, key: String, value: String) {
-        let mut candidates = self.clone().node_lookup(&Key::new(key.clone()));
-        let s = RoutingDistance(self.node.clone(), self.node.clone().id.distance_self());
+        let mut candidates = self.clone().node_lookup(&self.node.id.clone());
+        let s = RoutingDistance(self.node.clone().as_ref().clone(), self.node.clone().id.distance_self());
         candidates.push(s);
 
         for RoutingDistance(node, _) in candidates {
@@ -544,7 +549,7 @@ impl KademliaDHT {
                 self.store((key.clone(), val.clone()), contact);
             } else {
                 self.clone()
-                    .store((key.clone(), val.clone()), self.node.clone());
+                    .store((key.clone(), val.clone()), self.node.clone().as_ref().clone());
             }
 
             val
@@ -577,6 +582,7 @@ impl KademliaDHT {
 
         let mut parsed_buckets = Vec::new();
 
+
         for kb in flattened {
             for n in &kb.nodes {
                 let bucket = serde_json::json!(
@@ -585,6 +591,10 @@ impl KademliaDHT {
                             "ip": n.ip,
                             "port": n.port,
                             "id": format!("{:?}", n.id),
+                            "thrust":{
+                                "total_interaction": routes.reputation.index(&n.id).total_interaction,
+                                "successfully_interaction": routes.reputation.index(&n.id).successfully_interaction,
+                            },
                         },
                         "size": kb.size,
                      }
@@ -600,12 +610,13 @@ impl KademliaDHT {
             parsed_store.push(obj);
         }
 
+        let nd = self.node.clone().deref().clone();
         let json = serde_json::json!(
             {
-                "node": {
-                    "ip": self.node.ip,
-                    "port": self.node.port,
-                    "id": format!("{:?}", self.node.id),
+                "nodes": {
+                    "ip": nd.ip,
+                    "port": nd.port,
+                    "id": format!("{:?}", nd.id),
                 },
                 "routes": {
                     /*"node": {
