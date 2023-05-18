@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
 use crate::network::key::Key;
 use serde::{Deserialize, Serialize};
+use sha1::digest::consts::U32;
 use crate::constants::fixed_sizes::{WEIGHT_REPUTATION, WEIGHT_RISK};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -48,7 +49,7 @@ impl ThrustAndReputation {
     }
 
     pub fn calculate_thrust_factor(self) -> f64 {
-        WEIGHT_REPUTATION * self.clone().calculate_risk_integration()
+        WEIGHT_REPUTATION * self.clone().calculate_risk_integration() as f64
         + WEIGHT_RISK*self.calculate_risk_environment()
     }
 
@@ -57,14 +58,14 @@ impl ThrustAndReputation {
      *
      * The risk is given by: + 1/ Np for every correct interaction, - 2/ Np for every wrong interaction
      */
-    fn calculate_risk_integration(self) -> f64 {
+    fn calculate_risk_integration(self) -> u32 {
         let total_interaction = self.total_interaction;
         let successfully_interaction = self.successfully_interaction;
 
-        if total_interaction == 0 { return 1.0; }
+        if total_interaction == 0 { return 1; }
 
         ((successfully_interaction -  (total_interaction - successfully_interaction))
-            / total_interaction) as f64
+            / total_interaction)
     }
 
     /**

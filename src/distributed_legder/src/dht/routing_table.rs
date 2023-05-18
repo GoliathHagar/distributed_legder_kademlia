@@ -167,7 +167,8 @@ impl RoutingTable {
 
     }
 
-    pub fn update(&mut self, node: Node, rpc: Option<Arc<RpcSocket>>) {
+    pub fn update_reputation(&mut self, node : Node, rpc: Option<Arc<RpcSocket>>){
+
         if !self.reputation.contains_key(&node.clone().id) {
             self.reputation.insert(node.clone().id,ThrustAndReputation::new().update_interaction(true));
         }
@@ -225,6 +226,59 @@ impl RoutingTable {
                 };
             }
         }
+    }
+
+    pub fn update(&mut self, node: Node, rpc: Option<Arc<RpcSocket>>) {
+        if !self.reputation.contains_key(&node.clone().id) {
+            self.reputation.insert(node.clone().id,ThrustAndReputation::new().update_interaction(true));
+        }
+
+        let index = self.node_find_bucket_index(&node.id);
+
+        if self.buckets[index].nodes.len() < self.buckets[index].size {
+            let node_idx = self.buckets[index].nodes.iter()
+                .position(|x| x.id == node.clone().id);
+
+            match node_idx {
+                Some(i) => {
+                    self.buckets[index].nodes.remove(i);
+                    self.buckets[index].nodes.push(node.clone());
+                }
+                None => {
+                    self.buckets[index].nodes.push(node.clone());
+                }
+            }
+
+            let nr = self.reputation.index(&node.clone().id);
+            self.reputation.insert(node.clone().id,nr.clone().update_interaction(true));
+
+        }
+        else if rpc.is_some(){
+            let nd = self.buckets[index].nodes[0].clone();
+
+            match Client::new(rpc.unwrap()).make_call(Rpc::Ping,nd.clone()).recv() {
+                Ok(pong) =>  if let Some(p) = pong {
+                    let add_front = self.buckets[index].nodes.remove(0);
+                    self.buckets[index].nodes.push(add_front.clone());
+
+                    let nr = self.reputation.index(&add_front.clone().id);
+                    self.reputation.insert(add_front.clone().id,nr.clone().update_interaction(true));
+                }
+                ,
+                Err(_) => {
+                    error!("Failed to contact node {:?}", nd.id);
+
+                    self.buckets[index].nodes.remove(0);
+                    self.buckets[index].nodes.push(node.clone());
+
+                    let nr = self.reputation.index(&node.clone().id);
+                    self.reputation.insert(node.clone().id,nr.clone().update_interaction(true));
+                }
+            };
+
+        }
+
+
     }
 }
 

@@ -70,11 +70,6 @@ impl Server {
                     continue;
                 }
 
-                if data.source == data.destination {
-                    warn!("Source address match destination, ignoring");
-                    continue;
-                }
-
                 debug!("Received payload [{:?}]", data);
 
                 data.source = src_addr.to_string();

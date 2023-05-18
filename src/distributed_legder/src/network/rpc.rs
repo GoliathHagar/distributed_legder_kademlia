@@ -8,6 +8,7 @@ pub enum Rpc {
     Store(String, String),
     FindNode(Key),
     FindValue(String),
+
     Multicasting(String, String),
     Bootstrapping(String),
 

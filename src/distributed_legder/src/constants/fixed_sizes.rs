@@ -29,7 +29,7 @@ pub const REPUBLISH_TIMEOUT: u64 = 60 * 60000;
 pub const DUMP_STATE_TIMEOUT: u64 = 10000;
 
 //Trust and reputation
-pub const ENABLE_THRUST_MECHANISM: bool = true;
+pub const ENABLE_THRUST_MECHANISM: bool = false;
 pub const BALANCE_FACTOR: f64 = 0.65;
 pub const WEIGHT_REPUTATION : f64 = 0.2;
 pub const WEIGHT_RISK : f64 = 1.0- WEIGHT_REPUTATION as f64;
