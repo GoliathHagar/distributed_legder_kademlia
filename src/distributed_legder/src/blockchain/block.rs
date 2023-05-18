@@ -1,14 +1,29 @@
 use serde::{Serialize, Deserialize};
 use crate::blockchain::transaction::Transaction;
 
+/// Represents a block in the blockchain.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Block {
-    pub index: u64,            // Index of the block in the blockchain
-    pub timestamp: u64,        // Time when the block was created
-    pub nonce: u64,        // Time when the block was created
-    pub data: String,          // Data stored in the block
-    pub previous_hash: String, // Hash of the previous block in the blockchain
-    pub transactions: Vec<Transaction>, // New field to store transactions
+    /// Index of the block in the blockchain.
+    pub index: u64,
+
+    /// Time when the block was created.
+    pub timestamp: u64,
+
+    /// Data stored in the block.
+    pub data: String,
+
+    /// Hash of the previous block in the blockchain.
+    pub previous_hash: String,
+
+    /// Transactions stored in the block.
+    pub transactions: Vec<Transaction>,
+
+    /// Proof of work for the block.
     pub proof: u64,
-    pub hash: String,          // Hash of the current block
+
+    /// Hash of the current block.
+    pub hash: String,
+
+    pub nonce: u64,
 }
