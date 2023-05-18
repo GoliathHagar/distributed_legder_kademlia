@@ -95,7 +95,7 @@ impl Server {
         };
     }
 
-    fn request_handler(app: Arc<KademliaDHT>, payload: Datagram) {
+    fn  request_handler(app: Arc<KademliaDHT>, payload: Datagram) {
         thread::spawn(move || {
             match KademliaDHT::handle_request(app.clone(), payload.clone()) {
                 Some(payload) => {

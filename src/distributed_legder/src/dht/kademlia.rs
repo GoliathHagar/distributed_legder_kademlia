@@ -12,7 +12,9 @@ use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fs::create_dir_all;
 use std::io::Write;
 use std::ops::{Deref, Index};
-use std::sync::{Arc, Mutex};
+use std::ptr::null;
+use std::sync::{Arc, mpsc, Mutex, MutexGuard};
+use std::sync::mpsc::{Receiver, RecvError, Sender};
 use std::thread;
 use std::thread::JoinHandle;
 
@@ -22,12 +24,15 @@ pub struct KademliaDHT {
     pub store_values: Arc<Mutex<HashMap<String, String>>>,
     pub service: Arc<RpcSocket>,
     pub node: Arc<Node>,
+    pub subscription_sender: Arc<Mutex<Sender<Rpc>>>,
+    pub subscription_receiver: Arc<Mutex<Receiver<Rpc>>>
 }
 
 impl KademliaDHT {
     pub fn new(node: Node, bootstrap_node: Option<Node>) -> KademliaDHT {
         let routing = RoutingTable::new(Arc::new(node.clone()), bootstrap_node.clone()); //Todo: Routing Table
         let rpc = RpcSocket::new(node.clone());
+        let (sender, receiver) = mpsc::channel();
 
         info!("Node id [{:?}] created read to start", node.id);
 
@@ -36,6 +41,8 @@ impl KademliaDHT {
             store_values: Arc::new(Mutex::new(HashMap::new())),
             service: Arc::new(rpc),
             node: Arc::new(node.clone()),
+            subscription_sender: Arc::new(Mutex::new(sender)),
+            subscription_receiver: Arc::new(Mutex::new(receiver))
         }
     }
 
@@ -71,6 +78,7 @@ impl KademliaDHT {
         let server = Server::new(kdl.clone());
         let server_thread = server.start_service();
 
+        info!("Bootstrapping Node lookup initiated");
         kdl.node_lookup(&self.node.id);
 
         server_thread
@@ -96,7 +104,7 @@ impl KademliaDHT {
         let proto = app.clone();
 
         let resp: Option<Datagram> = match req.data {
-            Rpc::Multicasting(_, _) => proto.handel_multicast(payload),
+            Rpc::Multicasting(_, _, _) => proto.handel_multicast(payload),
             Rpc::Ping => proto.ping_reply(payload),
             Rpc::FindNode(_) => proto.find_node_reply(payload),
             Rpc::FindValue(_) => proto.find_value_reply(payload),
@@ -214,29 +222,20 @@ impl KademliaDHT {
     }
 
     pub(self) fn handel_multicast(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
+        if let Ok(sub) = self.subscription_sender.lock(){
+            if let Err(_d) = sub.send(payload.data){
+                error!("Failed to publish multicast packet");
+            }
+        }
 
-
-        return Some(Datagram {
-            token_id: payload.token_id,
-            source: payload.source,
-            destination: payload.destination,
-            data_type: DatagramType::RESPONSE,
-            data: Rpc::Pong,
-        });
+        None
 
     }
 
-    pub(self) fn bootstrapping_reply(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
+    pub fn multicast_subscriber(self: Arc<Self>,) -> Result<Rpc, RecvError> {
+       let sub = self.subscription_receiver.lock().unwrap();
 
-
-        return Some(Datagram {
-            token_id: payload.token_id,
-            source: payload.source,
-            destination: payload.destination,
-            data_type: DatagramType::RESPONSE,
-            data: Rpc::Pong,
-        });
-
+        sub.recv()
     }
 
     pub(self) fn node_lookup(self: Arc<Self>, key: &Key) -> Vec<RoutingDistance> {
