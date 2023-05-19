@@ -4,7 +4,7 @@ use crate::network::client::Client;
 use crate::network::key::Key;
 use crate::network::node::{Node, ThrustAndReputation};
 use crate::network::rpc_socket::RpcSocket;
-use log::{debug, error};
+use log::{debug, error, info};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::ops::{Deref, Index};
@@ -51,7 +51,6 @@ impl RoutingTable {
 
         let mut rt = Self { buckets, node, reputation};
 
-        // node.id.
         if let Some(bootstrap) = bootstrap {
             rt.update(bootstrap, None)
         }
@@ -81,12 +80,13 @@ impl RoutingTable {
             }
         }
 
-
+        info!("(bucket index: {} )", bucket_index);
+        println!("(bucket index: {} )", bucket_index);
 
         bucket_index
     }
 
-    pub fn node_find_bucket_index_thrust(&self, key: &Key) -> usize {
+    fn node_find_bucket_index_thrust(&self, key: &Key) -> usize {
         let bucket_index = self.node_find_bucket_index(key);
 
         let node : Option<&Node> = self.buckets[bucket_index]
@@ -145,12 +145,12 @@ impl RoutingTable {
         {
             let nod = self.buckets[bucket_idx].nodes.remove(i);
 
-            if self.reputation.contains_key(&node.clone().id){
-                let a = self.reputation.index(&node.clone().id).clone().update_interaction(false);
-                self.reputation.insert(node.clone().id, a);
+            if self.reputation.contains_key(&nod.clone().id){
+                let a = self.reputation.index(&nod.clone().id).clone().update_interaction(false);
+                self.reputation.insert(nod.clone().id, a);
             }
             else {
-                self.reputation.insert(node.clone().id, ThrustAndReputation::new().update_interaction(false));
+                self.reputation.insert(nod.clone().id, ThrustAndReputation::new().update_interaction(false));
             }
 
         } else {
@@ -167,7 +167,7 @@ impl RoutingTable {
 
     }
 
-    pub fn update_reputation(&mut self, node : Node, rpc: Option<Arc<RpcSocket>>){
+    fn update_reputation(&mut self, node : Node, rpc: Option<Arc<RpcSocket>>){
 
         if !self.reputation.contains_key(&node.clone().id) {
             self.reputation.insert(node.clone().id,ThrustAndReputation::new().update_interaction(true));
@@ -228,29 +228,30 @@ impl RoutingTable {
         }
     }
 
-    pub fn update(&mut self, node: Node, rpc: Option<Arc<RpcSocket>>) {
-        if !self.reputation.contains_key(&node.clone().id) {
-            self.reputation.insert(node.clone().id,ThrustAndReputation::new().update_interaction(true));
+    pub fn update(&mut self, update_node: Node, rpc: Option<Arc<RpcSocket>>) {
+        if !self.reputation.contains_key(&update_node.clone().id) {
+            self.reputation.insert(update_node.clone().id, ThrustAndReputation::new().update_interaction(true));
         }
 
-        let index = self.node_find_bucket_index(&node.id);
+        let index = self.node_find_bucket_index(&update_node.id);
 
-        if self.buckets[index].nodes.len() < self.buckets[index].size {
+        if self.buckets[index].nodes.len() < K_BUCKET_SIZE {
             let node_idx = self.buckets[index].nodes.iter()
-                .position(|x| x.id == node.clone().id);
+                .position(|x| x.id == update_node.clone().id);
 
             match node_idx {
                 Some(i) => {
                     self.buckets[index].nodes.remove(i);
-                    self.buckets[index].nodes.push(node.clone());
+                    self.buckets[index].nodes.push(update_node.clone());
                 }
                 None => {
-                    self.buckets[index].nodes.push(node.clone());
+                    self.buckets[index].nodes.push(update_node.clone());
+                    println!("{:?}  push to routing table {:?}", self.node.clone(), update_node.clone())
                 }
             }
 
-            let nr = self.reputation.index(&node.clone().id);
-            self.reputation.insert(node.clone().id,nr.clone().update_interaction(true));
+            let nr = self.reputation.index(&update_node.clone().id);
+            self.reputation.insert(update_node.clone().id, nr.clone().update_interaction(true));
 
         }
         else if rpc.is_some(){
@@ -269,10 +270,10 @@ impl RoutingTable {
                     error!("Failed to contact node {:?}", nd.id);
 
                     self.buckets[index].nodes.remove(0);
-                    self.buckets[index].nodes.push(node.clone());
+                    self.buckets[index].nodes.push(update_node.clone());
 
-                    let nr = self.reputation.index(&node.clone().id);
-                    self.reputation.insert(node.clone().id,nr.clone().update_interaction(true));
+                    let nr = self.reputation.index(&update_node.clone().id);
+                    self.reputation.insert(update_node.clone().id, nr.clone().update_interaction(true));
                 }
             };
 

@@ -1,1 +1,1 @@
-{"nodes":{"id":"8266E062C8232217DA9B4C7F4F32AF82214383FDF7E9E18FCF7FAF65F18DB47","ip":"192.168.1.198","port":1431},"routes":{"kbuckets":[]},"rpc":{"awaiting_response":"{}","socket":"UdpSocket { addr: 192.168.1.198:1431, fd: 9 }"},"store":[]}
+{"nodes":{"id":"84FAC38EE33CE22B8617425570E8C2DF26EF2AA33B2BC5C979BA2561AC692BB","ip":"0.0.0.0","port":1431},"routes":{"kbuckets":[]},"rpc":{"awaiting_response":"{}","socket":"UdpSocket { addr: 0.0.0.0:1431, fd: 4 }"},"store":[]}
