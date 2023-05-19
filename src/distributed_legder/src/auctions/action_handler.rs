@@ -1,24 +1,10 @@
-use std::collections::{LinkedList, VecDeque};
+/*use std::collections::{HashMap, LinkedList, VecDeque};
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
-
-use crate::auctions::{Auction, Bid};
-use crate::blockchain::Block;
-use crate::blockchain::transactions::ScriptPubKey;
-use crate::blockchain::BlockChainHandler;
-use crate::messages::MessageHandler;
-use crate::messages::messagetypes::{AuctionMessage, BidMessage, RequestPaymentMessage};
-use crate::p2p::kademlia::{P2PNode, StoredKeyMetadata};
-use crate::p2p::nodeoperations::{ContentLookupOperation, StoreOperation};
-use crate::p2p::kademlia::operations::Operation;
-use crate::p2p::node::NodeID;
-use crate::util::{ByteWrapper, Hex, Pair};
-use std::collections::HashMap;
-use std::cmp::Ordering;
-use std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering};
+use crate::auctions::auction::Auction;
+use crate::network::node::Node;
 
 pub struct AuctionHandler {
-    node: P2PNode,
+    node: Node,
     chain_handler: BlockChainHandler,
     message_handler: MessageHandler,
     our_active_auctions: Arc<Mutex<LinkedList<Auction>>>,
@@ -208,7 +194,7 @@ impl AuctionHandler {
                     bids.push_back(bid_obj.clone());
 
                     if waiting.decrement() == 0 {
-                        self.finished_loading_bids(auction.clone(), bids.clone(), pair.clone());
+                        self.finished_loading_bids(auction.clone(), Arc::new(Mutex::new(bids.clone())), pair.clone());
                     }
                 });
 
@@ -223,7 +209,7 @@ impl AuctionHandler {
 
         let wrapped_auction_id = ByteWrapper::new(auction.get_auction_id());
 
-        let payment_keys = self.payment_keys.lock().unwrap();
+        let mut payment_keys = self.payment_keys.lock().unwrap();
         payment_keys.insert(wrapped_auction_id, auction_owner.clone());
 
         let mut current_bid_index_for_auc = self.current_bid_index_for_auc.lock().unwrap();
@@ -431,7 +417,7 @@ impl AuctionHandler {
     }
 }
 
-impl AuctionHandler for AuctionService {
+impl  AuctionService for AuctionHandler {
     fn on_auction_started(&self, auction: Auction) {
         self.start_auction(auction);
     }
@@ -460,3 +446,4 @@ impl AuctionHandler for AuctionService {
         self.handle_finished_auctions();
     }
 }
+*/

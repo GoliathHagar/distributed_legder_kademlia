@@ -25,5 +25,5 @@ pub struct Block {
     /// Hash of the current block.
     pub hash: String,
 
-    pub nonce: u64,
+    pub nonce: u128,
 }

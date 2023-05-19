@@ -1,6 +1,4 @@
-use crypto::digest::Digest;
-use crypto::sha1::Sha1;
-use std::time::{SystemTime, UNIX_EPOCH};
+/*
 
 pub struct Auction {
     auction_id: [u8; 20],
@@ -93,3 +91,4 @@ impl Auction {
         auction
     }
 }
+*/
