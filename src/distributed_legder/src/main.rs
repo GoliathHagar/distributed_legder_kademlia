@@ -12,23 +12,11 @@ use distributed_legder::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
 //use distributed_legder::blockchain::consensus::ConsensusAlgorithm;
 
 fn main() {
-
-    /*
-    let data = Datagram {
-        data_type: DatagramType::REQUEST,
-        token_id: Key::new("test".to_string()),
-        source: "YourIP".to_string(),
-        destination: format!("{}:{}", get_local_ip().unwrap_or_default(), 1432),
-        data: Rpc::Ping,
-    };
-*/
     env_logger::init();
 
     let current_node = Node::new(get_local_ip(), 1432);
 
     let new_node = Node::new(get_local_ip(), 1422);
-
-    //info!("{}", serde_json::to_string(&data).unwrap());
 
     let kad = Arc::new(KademliaDHT::new(current_node.clone(), None));
 

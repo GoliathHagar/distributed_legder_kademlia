@@ -265,8 +265,8 @@ fn test_broadcast_nodes() {
     let kill1 = &Datagram {
         data_type: DatagramType::KILL,
         token_id: Key::new("test".to_string()),
-        source: btp.get_address(),
-        destination: c1.get_address(),
+        source: c.get_address(),
+        destination: btp.get_address(),
         data: Rpc::Ping,
     };
 
@@ -278,10 +278,10 @@ fn test_broadcast_nodes() {
         data: Rpc::Ping,
     };
 
-    /*let bt = KademliaDHT::new(
+    let bt =Arc::new( KademliaDHT::new(
         btp.clone(),
         None,
-    );*/
+    ));
 
     let contact1 = Arc::new(KademliaDHT::new(
         c.clone(),
@@ -299,12 +299,9 @@ fn test_broadcast_nodes() {
     let c1c = contact1.clone();
     let c2c = contact2.clone();
 
-    //let t0 = bt.clone().init(Some("state_dumps/test-network-boot-1.json".to_string()));
+    let t0 = bt.clone().init(Some("state_dumps/test-network-boot-1.json".to_string()));
     let t1 = contact1.init(Some("state_dumps/test-network-1.json".to_string()));
-    thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
-
     let t2 = contact2.init(Some("state_dumps/test-network-2.json".to_string()));
-
 
     let expected = ("id".to_string(), "type".to_string(), "info".to_string());
 
@@ -317,13 +314,13 @@ fn test_broadcast_nodes() {
 
     thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
 
-    //client.clone().datagram_request(kill.clone());
     client.clone().datagram_request(kill.clone());
+    client.clone().datagram_request(kill1.clone());
     client.datagram_request(kill_self.clone());
 
     t1.join().expect("thead 1 dead");
     t2.join().expect("thead 1 dead");
-    //t0.join().expect("thread 2 dead");
+    t0.join().expect("thread 2 dead");
 
     assert_eq!(Rpc::Multicasting(expected.0, expected.1, expected.2), binfo);
 

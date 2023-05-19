@@ -104,11 +104,11 @@ fn get_k_closest_node() {
 
 #[test]
 fn routing_table_building() {
-    let btp = Node::new(get_local_ip(), 1432);
+    let btp = Node::new(get_local_ip(), 1543);
 
-   // let boot_stap_node = KademliaDHT::new(btp.clone(), None);
     let c = Node::new(get_local_ip(), 1430);
 
+    let boot_stap_node = Arc::new(KademliaDHT::new(btp.clone(), None));
     let contact1 = Arc::new(KademliaDHT::new(
         c.clone(),
         Some(btp.clone()),
@@ -136,17 +136,15 @@ fn routing_table_building() {
     let ac3 = contact3.clone();
     let ac4 = contact4.clone();
 
+    let t0 = boot_stap_node.clone().init(Some("state_dumps/test-contact-1.json".to_string()));
     let t1 = contact1.clone().init(Some("state_dumps/test-contact-1.json".to_string()));
-    thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
     let t2 = contact2.clone().init(Some("state_dumps/test-contact-2.json".to_string()));
-    thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
     let t3 = contact3.clone().init(Some("state_dumps/test-contact-3.json".to_string()));
-    thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
-    let t0 = contact4.clone().init(Some("state_dumps/test-contact-4.json".to_string()));
+    let t4 = contact4.clone().init(Some("state_dumps/test-contact-4.json".to_string()));
 
     let loc = if let Ok(l) = contact1.routing_table.lock() {
         let cls = l.get_closest_nodes(
-            &Node::new(get_local_ip(), 1432).id,
+            &Node::new(get_local_ip(), 1543).id,
             20,
         );
         for x in cls.clone() {
@@ -160,8 +158,6 @@ fn routing_table_building() {
     thread::sleep(std::time::Duration::from_millis(5*DUMP_STATE_TIMEOUT));
     ac4.clone().put("key41".to_string(), "vall".to_string());
     ac4.get("key21".to_string());
-
-    thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
 
     client.clone().datagram_request(Datagram {
         data_type: DatagramType::KILL,
@@ -199,6 +195,18 @@ fn routing_table_building() {
         data: Rpc::Ping,
     });
 
+  client.clone().datagram_request(Datagram {
+        data_type: DatagramType::KILL,
+        token_id: Key::new("test".to_string()),
+        source: c.get_address(),
+        destination: format!(
+            "{}:{}",
+            get_local_ip(),
+            1543
+        ),
+        data: Rpc::Ping,
+    });
+
     client.clone().datagram_request(Datagram {
         data_type: DatagramType::KILL,
         token_id: Key::new("test".to_string()),
@@ -215,4 +223,5 @@ fn routing_table_building() {
     t1.join().expect("t1");
     t2.join().expect("t2");
     t3.join().expect("t3");
+    t4.join().expect("t4");
 }
