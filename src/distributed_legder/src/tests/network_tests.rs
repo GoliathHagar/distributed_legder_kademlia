@@ -6,7 +6,7 @@ use crate::network::key::Key;
 use crate::network::node::Node;
 use std::sync::Arc;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use crate::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
 use crate::constants::utils::get_local_ip;
 
@@ -40,8 +40,8 @@ fn two_way_handshake_ping_pong() {
     let current_node = Node::new("127.0.0.1".to_string(), 1234);
     let remote_node = Node::new("127.0.0.1".to_string(), 8000);
 
-    let kad = KademliaDHT::new(current_node.clone(), None);
-    let kad2 = KademliaDHT::new(remote_node.clone(), None);
+    let kad = Arc::new(KademliaDHT::new(current_node.clone(), None));
+    let kad2 = Arc::new(KademliaDHT::new(remote_node.clone(), None));
 
     let threa1 = kad.clone().init(None);
     let threa2 = kad2.clone().init(None);
@@ -118,7 +118,7 @@ fn test_find_value_not_store() {
 
     let current_node = Node::new("127.0.0.1".to_string(), 8081);
 
-    let kad = KademliaDHT::new(current_node.clone(), None);
+    let kad = Arc::new(KademliaDHT::new(current_node.clone(), None));
 
     let threa1 = kad.clone().init(None);
 
@@ -165,7 +165,7 @@ fn test_find_value_store_successful() {
 
     let current_node = Node::new("127.0.0.1".to_string(), 8082);
 
-    let kad = KademliaDHT::new(current_node.clone(), None);
+    let kad = Arc::new(KademliaDHT::new(current_node.clone(), None));
 
     let key = "test".to_string();
 
@@ -174,7 +174,7 @@ fn test_find_value_store_successful() {
 
     let threa1 = kad.clone().init(None);
 
-    Arc::new(kad.clone()).put(key.clone(), value.clone());
+    kad.clone().put(key.clone(), value.clone());
 
     let client = Client::new(kad.service.clone());
 
@@ -222,7 +222,7 @@ fn test_store() {
 
     let current_node = Node::new("127.0.0.1".to_string(), 8083);
 
-    let kad = KademliaDHT::new(current_node.clone(), None);
+    let kad = Arc::new(KademliaDHT::new(current_node.clone(), None));
 
     let threa1 = kad.clone().init(None);
 
@@ -248,17 +248,17 @@ fn test_store() {
 #[test]
 fn test_broadcast_nodes() {
 
-    let btp = Node::new(get_local_ip().unwrap_or("0.0.0.0".to_string()), 1440);
+    let btp = Node::new(get_local_ip(), 1432);
 
     // let boot_stap_node = KademliaDHT::new(btp.clone(), None);
-    let c = Node::new(get_local_ip().unwrap_or("0.0.0.0".to_string()), 4441);
-    let c1 = Node::new(get_local_ip().unwrap_or("0.0.0.0".to_string()), 8542);
+    let c = Node::new(get_local_ip(), 4441);
+    let c1 = Node::new(get_local_ip(), 8542);
 
     let kill = &Datagram {
         data_type: DatagramType::KILL,
         token_id: Key::new("test".to_string()),
-        source: btp.get_address(),
-        destination: c.get_address(),
+        source: c.get_address(),
+        destination: c1.get_address(),
         data: Rpc::Ping,
     };
 
@@ -273,52 +273,57 @@ fn test_broadcast_nodes() {
     let kill_self = &Datagram {
         data_type: DatagramType::KILL,
         token_id: Key::new("test".to_string()),
-        source: btp.get_address(),
-        destination: btp.get_address(),
+        source: c.get_address(),
+        destination: c.get_address(),
         data: Rpc::Ping,
     };
 
-    let bt = KademliaDHT::new(
+    /*let bt = KademliaDHT::new(
         btp.clone(),
         None,
-    );
+    );*/
 
-    let contact1 = KademliaDHT::new(
+    let contact1 = Arc::new(KademliaDHT::new(
         c.clone(),
         Some(btp.clone()),
-    );
+    ));
 
-    let contact2 = KademliaDHT::new(
+    let contact2 = Arc::new(KademliaDHT::new(
         c1.clone(),
         Some(btp.clone()),
-    );
+    ));
 
 
-    let client = Client::new(bt.service.clone());
+    let client = Client::new(contact1.service.clone());
 
-    let t0 = bt.clone().init(Some("state_dumps/test-network-boot-1.json".to_string()));
-    let t1 = contact1.clone().init(Some("state_dumps/test-network-1.json".to_string()));
-    thread::sleep(std::time::Duration::from_millis(5*DUMP_STATE_TIMEOUT));
+    let c1c = contact1.clone();
+    let c2c = contact2.clone();
 
-    let t2 = contact2.clone().init(Some("state_dumps/test-network-2.json".to_string()));
+    //let t0 = bt.clone().init(Some("state_dumps/test-network-boot-1.json".to_string()));
+    let t1 = contact1.init(Some("state_dumps/test-network-1.json".to_string()));
+    thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
+
+    let t2 = contact2.init(Some("state_dumps/test-network-2.json".to_string()));
 
 
     let expected = ("id".to_string(), "type".to_string(), "info".to_string());
 
-    Arc::new(contact1.clone()).put(expected.clone().0, expected.clone().2 );
+    c1c.clone().put(expected.clone().0, expected.clone().2 );
 
-    Arc::new(bt.clone()).broadcast_info((expected.clone().0, expected.clone().1, expected.clone().2 ));
+    c1c.broadcast_info((expected.clone().0, expected.clone().1, expected.clone().2 ));
 
-    let binfo = Arc::new(contact2.clone()).multicast_subscriber();
+    let binfo = c2c.multicast_subscriber();
 
 
+    thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
+
+    //client.clone().datagram_request(kill.clone());
     client.clone().datagram_request(kill.clone());
-    client.clone().datagram_request(kill1.clone());
     client.datagram_request(kill_self.clone());
 
     t1.join().expect("thead 1 dead");
     t2.join().expect("thead 1 dead");
-    t0.join().expect("thread 2 dead");
+    //t0.join().expect("thread 2 dead");
 
     assert_eq!(Rpc::Multicasting(expected.0, expected.1, expected.2), binfo);
 

@@ -8,6 +8,7 @@ use log::{debug, error, info};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::ops::{Deref, Index};
+use std::process::id;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
@@ -62,7 +63,6 @@ impl RoutingTable {
         // given a bucket j, we are guaranteed that
         //  2^j <= distance(node, contact) < 2^(j+1)
         // a node with distance d will be put in the k-bucket with index i=⌊logd⌋
-        let mut bucket_index = KEY_SIZE * 8 - 1;
 
         let dst = self.clone().node.id.distance(key);
 
@@ -74,16 +74,13 @@ impl RoutingTable {
                     debug!("(i: {} ,j: {} , index: {}, dst {:#010b} , bit {} )",
                         i, j, i * 8 + 7 - j, dst[i], bit.clone());
 
-                    bucket_index = i * 8 + 7 - j;
+                    return i * 8 + 7 - j;
                 }
                 // else if i == KEY_SIZE -1 && j==0 { return thrust%256 } //distance to self
             }
         }
 
-        info!("(bucket index: {} )", bucket_index);
-        println!("(bucket index: {} )", bucket_index);
-
-        bucket_index
+        KEY_SIZE * 8 - 1
     }
 
     fn node_find_bucket_index_thrust(&self, key: &Key) -> usize {
@@ -113,6 +110,7 @@ impl RoutingTable {
         //search forward (closests)
         while closest.len() < capacity && bucket_index < self.buckets.len() - 1 {
             for nd in &self.buckets[bucket_index].nodes {
+                if nd.id.clone() == key.clone() { continue; }
                 closest.push(RoutingDistance(nd.clone(), nd.id.distance(&key)))
             }
 
@@ -124,6 +122,7 @@ impl RoutingTable {
             bucket_index_reverse -= 1;
 
             for n in &self.buckets[bucket_index_reverse].nodes {
+                if n.id.clone() == key.clone() { continue; }
                 closest.push(RoutingDistance(n.clone(), n.id.distance(&key)))
             }
         }
@@ -136,103 +135,32 @@ impl RoutingTable {
     }
 
     pub fn remove(&mut self, node: &Node) {
-        let bucket_idx: usize = self.node_find_bucket_index(&node.id);
+        let bucket_idx: usize = self.node_find_bucket_index(&node.clone().id);
 
         if let Some(i) = self.buckets[bucket_idx]
             .nodes
             .iter()
-            .position(|x| x.id == node.id)
+            .position(|x| x.id == node.clone().id)
         {
-            let nod = self.buckets[bucket_idx].nodes.remove(i);
-
-            if self.reputation.contains_key(&nod.clone().id){
-                let a = self.reputation.index(&nod.clone().id).clone().update_interaction(false);
-                self.reputation.insert(nod.clone().id, a);
-            }
-            else {
-                self.reputation.insert(nod.clone().id, ThrustAndReputation::new().update_interaction(false));
-            }
-
+           self.buckets[bucket_idx].nodes.remove(i);
         } else {
-            if self.reputation.contains_key(&node.clone().id){
-                let a = self.reputation.index(&node.clone().id).clone().update_interaction(false);
-                self.reputation.insert(node.clone().id, a);
-            }
-            else {
-                self.reputation.insert(node.clone().id, ThrustAndReputation::new().update_interaction(false));
-            }
-
-            error!("Tried to remove non-existing entry, {}", node.get_address());
+            error!("Tried to remove non-existing entry, {}", node.clone().get_address());
         }
+
+        self.update_reputation(node.clone().id, false);
 
     }
 
-    fn update_reputation(&mut self, node : Node, rpc: Option<Arc<RpcSocket>>){
-
-        if !self.reputation.contains_key(&node.clone().id) {
-            self.reputation.insert(node.clone().id,ThrustAndReputation::new().update_interaction(true));
+    pub fn update_reputation(&mut self, key: Key, status : bool){
+        if self.reputation.contains_key(&key.clone()) {
+            self.reputation.insert(key.clone(), self.reputation.index(&key).clone().update_interaction(status));
         }
-
-        let index = self.node_find_bucket_index(&node.id);
-
-        if self.buckets[index].nodes.len() < self.buckets[index].size {
-            let node_idx = self.buckets[index]
-                .nodes
-                .iter()
-                .position(|x| x.id == node.id);
-
-            match node_idx {
-                Some(i) => {
-                    let no = self.buckets[index].nodes.remove(i);
-
-                    let rpt = self.reputation.index(&no.clone().id);
-                    self.reputation.insert(no.clone().id,rpt.clone().update_interaction(true));
-
-                    self.buckets[index].nodes.push(no);
-                }
-                None => {
-                    let rpt = self.reputation.index(&node.clone().id);
-                    self.reputation.insert(node.clone().id,rpt.clone().update_interaction(true));
-
-                    self.buckets[index].nodes.push(node.clone());
-                }
-            }
-        } else {
-            if rpc.is_some() {
-                let nd = self.buckets[index].nodes[0].clone();
-
-                match Client::new(rpc.unwrap())
-                    .make_call(Rpc::Ping, nd.clone())
-                    .recv()
-                    .unwrap()
-                {
-                    Some(_) => {
-                        let add_front = self.buckets[index].nodes.remove(0);
-
-                        let nr = self.reputation.index(&add_front.clone().id);
-                        self.reputation.insert(add_front.clone().id,nr.clone().update_interaction(true));
-
-                        self.buckets[index].nodes.push(add_front);
-                    }
-                    None => {
-                        error!("Failed to contact node {:?}", nd.id);
-                        self.buckets[index].nodes.remove(0);
-
-                        self.reputation.insert(node.clone().id, ThrustAndReputation::new()
-                            .update_interaction(true));
-
-                        self.buckets[index].nodes.push(node.clone());
-                    }
-                };
-            }
+        else {
+            self.reputation.insert(key, ThrustAndReputation::new().update_interaction(status));
         }
     }
 
     pub fn update(&mut self, update_node: Node, rpc: Option<Arc<RpcSocket>>) {
-        if !self.reputation.contains_key(&update_node.clone().id) {
-            self.reputation.insert(update_node.clone().id, ThrustAndReputation::new().update_interaction(true));
-        }
-
         let index = self.node_find_bucket_index(&update_node.id);
 
         if self.buckets[index].nodes.len() < K_BUCKET_SIZE {
@@ -243,15 +171,13 @@ impl RoutingTable {
                 Some(i) => {
                     self.buckets[index].nodes.remove(i);
                     self.buckets[index].nodes.push(update_node.clone());
+                    debug!("{:?}  push to routing table {:?} at {}", self.node.clone(), update_node.clone(), index);
                 }
                 None => {
                     self.buckets[index].nodes.push(update_node.clone());
-                    println!("{:?}  push to routing table {:?}", self.node.clone(), update_node.clone())
+                    debug!("{:?}  push to routing table {:?} at {}", self.node.clone(), update_node.clone(), index);
                 }
             }
-
-            let nr = self.reputation.index(&update_node.clone().id);
-            self.reputation.insert(update_node.clone().id, nr.clone().update_interaction(true));
 
         }
         else if rpc.is_some(){
@@ -262,8 +188,7 @@ impl RoutingTable {
                     let add_front = self.buckets[index].nodes.remove(0);
                     self.buckets[index].nodes.push(add_front.clone());
 
-                    let nr = self.reputation.index(&add_front.clone().id);
-                    self.reputation.insert(add_front.clone().id,nr.clone().update_interaction(true));
+                    debug!("{:?}  push to routing table {:?} at {}", self.node.clone(), update_node.clone(), index);
                 }
                 ,
                 Err(_) => {
@@ -271,15 +196,12 @@ impl RoutingTable {
 
                     self.buckets[index].nodes.remove(0);
                     self.buckets[index].nodes.push(update_node.clone());
-
-                    let nr = self.reputation.index(&update_node.clone().id);
-                    self.reputation.insert(update_node.clone().id, nr.clone().update_interaction(true));
                 }
             };
 
         }
 
-
+        self.update_reputation(update_node.clone().id, true);
     }
 }
 

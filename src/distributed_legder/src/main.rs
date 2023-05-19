@@ -24,33 +24,42 @@ fn main() {
 */
     env_logger::init();
 
-    let current_node = Node::new(get_local_ip().unwrap_or("0.0.0.0".to_string()), 1432);
+    let current_node = Node::new(get_local_ip(), 1432);
 
-    let bootstrap_node = Node::new(get_local_ip().unwrap_or("192.168.153.8".to_string()), 1432);
+    let new_node = Node::new(get_local_ip(), 1422);
 
     //info!("{}", serde_json::to_string(&data).unwrap());
 
-    let kad = KademliaDHT::new(current_node.clone(), Some(bootstrap_node.clone()));
+    let kad = Arc::new(KademliaDHT::new(current_node.clone(), None));
 
     let kadc = kad.clone();
 
     let threa1 = kad.init(Some("state_dumps/self.json".to_string()));
 
     thread::sleep(std::time::Duration::from_millis(2*DUMP_STATE_TIMEOUT));
-    Arc::new(kadc.clone()).put(
+    kadc.clone().put(
         "test00".to_string(),
         "It works, this value was stored successifully".to_string(),
     );
     thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
 
-    Arc::new(kadc.clone()).put(
+    kadc.clone().put(
         "claudia".to_string(),
         "It works, this value was stored successifully".to_string(),
     );
 
     debug!("Done initial setup");
+    let kad2 = Arc::new(KademliaDHT::new(new_node.clone(), Some(current_node)));
+
+    let t2 = kad2.clone().init(Some("state_dumps/self-node.json".to_string()));
+
+    debug!("Done initial setup");
+
+    kad2.clone().broadcast_info(("main".to_string(), "test".to_string(), "this is a test".to_string()));
 
     threa1.join().expect("thead: dead");
+    t2.join().expect("thead: dead");
+
 
 
 /*

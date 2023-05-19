@@ -1,3 +1,0 @@
-@startjson
-{"nodes":{"id":"C89C7B7B67BB5310584E9635D69E2ECCF2D27E9CE38FE4EAB37A13FF2677445","ip":"0.0.0.0","port":1430},"routes":{"kbuckets":[]},"rpc":{"awaiting_response":"{9F86D081884C7D659A2FEAA0C55AD015A3BF4F1B2BB822CD15D6C15B0F0A8: Sender { .. }}","socket":"UdpSocket { addr: 0.0.0.0:1430, fd: 3 }"},"store":[]}
-@endjson

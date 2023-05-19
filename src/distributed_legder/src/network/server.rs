@@ -37,8 +37,8 @@ impl Server {
                     }
                 };
 
-                debug!(
-                    "Source address {} Destination address {}",
+                info!(
+                    "Incoming request source address {} destination address {}",
                     src_addr,
                     app.service.node.get_address()
                 );
