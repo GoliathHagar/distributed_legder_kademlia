@@ -1,4 +1,5 @@
 extern crate core;
+extern crate core;
 
 mod tests;
 

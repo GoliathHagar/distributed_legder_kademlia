@@ -1,3 +1,4 @@
+use core::num::dec2flt::lemire;
 use std::collections::HashMap;
 use sha2::Sha256;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -10,8 +11,7 @@ use crate::constants::fixed_sizes::BLOCKCHAIN_VERSION;
 use crate::constants::utils::{calculate_sha256, get_timestamp_now};
 
 pub struct Blockchain {
-    pub blocks: Vec<Block>,
-    pub awaiting_hash_blocks: HashMap<String, Block>,
+    pub blocks: Vec<Block>, // valid by pow/pos blocks
     current_transactions: Vec<Transaction>,
     consensus_algorithm: ConsensusAlgorithm,
 }
@@ -106,6 +106,14 @@ impl Blockchain {
         self.current_transactions.push(transaction);
     }
 
+    fn valid_proof(self, last_proof: u128, proof: u128) -> bool {
+        let guess = format!("{}{}", last_proof, proof);
+        let mut hasher = Sha256::new();
+        hasher.update(guess.as_bytes());
+        let guess_hash = hasher.finalize();
+        guess_hash.starts_with(&[0, 0, 0, 0])
+    }
+
     /// Mine a new block
     pub fn mine_block(&mut self, miner_address: String) -> Result<(), String> {
         let last_block = self.blocks.last().clone().unwrap();
@@ -138,22 +146,6 @@ impl Blockchain {
         self.current_transactions = vec![];
 
         Ok(())
-    }
-
-    fn proof_of_work(&self, last_proof: u128) -> Result<u128, String> {
-        let mut proof = 0;
-        while !self.valid_proof(last_proof, proof) {
-            proof += 1;
-        }
-        Ok(proof)
-    }
-
-    fn valid_proof(&self, last_proof: u128, proof: u128) -> bool {
-        let guess = format!("{}{}", last_proof, proof);
-        let mut hasher = Sha256::new();
-        hasher.update(guess.as_bytes());
-        let guess_hash = hasher.finalize();
-        guess_hash.starts_with(&[0, 0, 0, 0])
     }
 
     fn delegated_proof_of_stake(&self) -> Result<u128, String> {

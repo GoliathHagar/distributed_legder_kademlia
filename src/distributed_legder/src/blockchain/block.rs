@@ -79,4 +79,8 @@ impl Block {
         self.header.merkle_root.eq(&mt)
     }
 
+    pub fn is_valid(&self){
+
+    }
+
 }

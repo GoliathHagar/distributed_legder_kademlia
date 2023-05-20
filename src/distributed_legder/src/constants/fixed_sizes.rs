@@ -37,3 +37,4 @@ pub const WEIGHT_RISK : f64 = 1.0- WEIGHT_REPUTATION as f64;
 
 //Blockchain
 pub const BLOCKCHAIN_VERSION : u8 = 1;
+pub const BLOCKCHAIN_MINING_DIFFICULTY : u8 = 1;

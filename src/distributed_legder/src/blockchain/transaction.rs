@@ -18,3 +18,5 @@ pub struct Transaction {
     /// The signature of the transaction signed by the auction owner.
     pub signature: String,
 }
+
+
