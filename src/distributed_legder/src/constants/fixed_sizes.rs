@@ -1,3 +1,5 @@
+use std::string::ToString;
+
 // BYTES 8 BITS
 pub const BYTE: usize = 8;
 
@@ -37,4 +39,5 @@ pub const WEIGHT_RISK : f64 = 1.0- WEIGHT_REPUTATION as f64;
 
 //Blockchain
 pub const BLOCKCHAIN_VERSION : u8 = 1;
-pub const BLOCKCHAIN_MINING_DIFFICULTY : usize = 32;
+pub const BLOCKCHAIN_MINING_DIFFICULTY : usize = 10;
+pub const  ZEROS_HASH : &str = "0000000000000000000000000000000000000000000000000000000000000000";

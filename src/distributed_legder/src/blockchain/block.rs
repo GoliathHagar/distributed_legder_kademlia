@@ -76,6 +76,8 @@ impl Block {
     */
 
     fn calculate_merkle_tree(transactions: Vec<Transaction>) -> String {
+        if transactions.is_empty() { return "".to_string(); }
+
         let mut hashes: Vec<String> = transactions
             .iter()
             .map(|transaction| transaction.id.clone())
@@ -93,14 +95,17 @@ impl Block {
                 };
 
                 let combined = format!("{}{}", left, right);
-                let hash = calculate_sha256(&combined);
+                let hash = hex::encode(calculate_sha256(&combined));
                 next_level.push(hash);
             }
 
             hashes = next_level;
         }
 
-        hashes[0].clone()
+        return if !hashes.is_empty() {
+             hashes[0].clone()
+        }
+        else { "".to_string() }
     }
 
     pub fn validate_merkle_tree(self) -> bool {

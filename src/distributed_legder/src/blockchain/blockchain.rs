@@ -6,7 +6,8 @@ use crate::blockchain::transaction::Transaction;
 use crate::blockchain::consensus::ConsensusAlgorithm;
 use std::convert::TryInto;
 use sha1::Digest;
-use crate::constants::fixed_sizes::BLOCKCHAIN_VERSION;
+use crate::blockchain::miner::Miner;
+use crate::constants::fixed_sizes::{BLOCKCHAIN_VERSION, ZEROS_HASH};
 use crate::constants::utils::{calculate_block_hash, calculate_sha256, get_timestamp_now};
 
 pub struct Blockchain {
@@ -17,6 +18,14 @@ pub struct Blockchain {
 
 impl Blockchain {
     pub fn new(consensus_algorithm: ConsensusAlgorithm) -> Self {
+        Self {
+            blocks: Vec::new(),
+            current_transactions: Vec::new(),
+            consensus_algorithm,
+        }
+    }
+
+    pub fn init(self){
         let mut  genesis_block = Block::new(
             0,
             "0".to_string(),
@@ -27,13 +36,10 @@ impl Blockchain {
         let hash = calculate_block_hash(&genesis_block);
         genesis_block.header.hash = hash;
 
-        let blocks = Vec::from([genesis_block]);
+        let nonce = Miner{}.proof_of_work(genesis_block.clone());
+        genesis_block.header.nonce = nonce;
 
-        Self {
-            blocks,
-            current_transactions: Vec::new(),
-            consensus_algorithm,
-        }
+        let blocks = Vec::from([genesis_block]);
     }
 
     pub fn create_block(&mut self) {
@@ -55,12 +61,32 @@ impl Blockchain {
 
         let hash = calculate_block_hash(&block);
         block.header.hash = hash;
-        self.blocks.push(block);
         self.current_transactions = Vec::new();
     }
 
-    pub fn add_block(&mut self, block : Block) {
+    pub fn add_block(&mut self, block : Block) -> bool {
+        if self.blocks.is_empty()
+            && block.header.previous_hash.eq(ZEROS_HASH) && block.is_valid() {
+            self.blocks.push(block);
 
+            return true;
+        }
+        else {
+            let prv_hsh = self.blocks.last().unwrap().clone().header.hash;
+
+            if block.header.previous_hash == prv_hsh && block.is_valid() {
+                self.blocks.push(block);
+
+                return true;
+            }
+            else {
+                //
+                //todo: ask the network the previous(kademlia);
+            }
+
+        }
+
+        false
     }
 
     pub fn block_count(&self) -> usize {
