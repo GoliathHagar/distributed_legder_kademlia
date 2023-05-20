@@ -66,11 +66,41 @@ impl Block {
         }
     }
 
+   /*
     fn calculate_merkle_tree(transations : Vec<Transaction>) -> String {
 
         let data = "".to_string();
 
         hex::encode(calculate_sha256(&data))
+    }
+    */
+
+    fn calculate_merkle_tree(transactions: Vec<Transaction>) -> String {
+        let mut hashes: Vec<String> = transactions
+            .iter()
+            .map(|transaction| transaction.id.clone())
+            .collect();
+
+        while hashes.len() > 1 {
+            let mut next_level: Vec<String> = Vec::new();
+
+            for i in (0..hashes.len()).step_by(2) {
+                let left = &hashes[i];
+                let right = if i + 1 < hashes.len() {
+                    &hashes[i + 1]
+                } else {
+                    left
+                };
+
+                let combined = format!("{}{}", left, right);
+                let hash = calculate_sha256(&combined);
+                next_level.push(hash);
+            }
+
+            hashes = next_level;
+        }
+
+        hashes[0].clone()
     }
 
     pub fn validate_merkle_tree(self) -> bool {
