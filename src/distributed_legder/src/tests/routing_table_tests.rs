@@ -136,7 +136,7 @@ fn routing_table_building() {
     let ac3 = contact3.clone();
     let ac4 = contact4.clone();
 
-    let t0 = boot_stap_node.clone().init(Some("state_dumps/test-contact-1.json".to_string()));
+    let t0 = boot_stap_node.clone().init(Some("state_dumps/test-bootstrap-1.json".to_string()));
     let t1 = contact1.clone().init(Some("state_dumps/test-contact-1.json".to_string()));
     let t2 = contact2.clone().init(Some("state_dumps/test-contact-2.json".to_string()));
     let t3 = contact3.clone().init(Some("state_dumps/test-contact-3.json".to_string()));
