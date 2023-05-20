@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use sha2::Sha256;
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::blockchain::block::Block;
@@ -5,20 +6,22 @@ use crate::blockchain::transaction::Transaction;
 use crate::blockchain::consensus::ConsensusAlgorithm;
 use std::convert::TryInto;
 use sha1::Digest;
-use crate::constants::utils::calculate_sha256;
+use crate::constants::fixed_sizes::BLOCKCHAIN_VERSION;
+use crate::constants::utils::{calculate_sha256, get_timestamp_now};
 
 pub struct Blockchain {
     pub blocks: Vec<Block>,
+    pub awaiting_hash_blocks: HashMap<String, Block>,
     current_transactions: Vec<Transaction>,
     consensus_algorithm: ConsensusAlgorithm,
 }
 
-/*
 pub fn calculate_hash(block: &Block) -> String {
+    let blk_hdr = block.header.clone();
     let data = format!(
-        "{}{}{}{}{}",
-        block.index, block.timestamp, block.proof, block.transactions.len(), block.previous_hash
-    );
+        "{}{}{}{}{}{}",
+        blk_hdr.index, blk_hdr.version, blk_hdr.timestamp, blk_hdr.previous_hash,
+        blk_hdr.merkle_root, blk_hdr.nonce);
 
     let hash = calculate_sha256(&data);
     hex::encode(hash)
@@ -26,48 +29,50 @@ pub fn calculate_hash(block: &Block) -> String {
 
 impl Blockchain {
     pub fn new(consensus_algorithm: ConsensusAlgorithm) -> Self {
-        let genesis_block = Block {
-            index: 0,
-            timestamp: 0,
-            nonce: 0,
-            transactions: Vec::new(),
-            proof: 0,
-            previous_hash: "0".to_string(),
-            hash: "".to_string(),
-            payload: "".to_string(),
-        };
+        let mut  genesis_block = Block::new(
+            0,
+            "0".to_string(),
+            "0".to_string(),
+            Vec::new(),
+        );
+
         let hash = calculate_hash(&genesis_block);
-        let genesis_block = Block { hash, ..genesis_block };
+        genesis_block.header.hash = hash;
+
         let blocks = Vec::from(genesis_block);
+
         Self {
             blocks,
-            current_transactions: vec![],
+            current_transactions: Vec::new(),
             consensus_algorithm,
         }
     }
 
-    pub fn add_block(&mut self, data: String) {
+    pub fn create_block(&mut self) {
+        if self.current_transactions.is_empty() { return; }
+
         let previous_block = self.blocks.last().unwrap();
-        let index = self.blocks.len() as u64;
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        let index = previous_block.header.index + 1;
+
+        let timestamp = get_timestamp_now();
+
         let previous_hash = previous_block.hash.clone();
-        let block = Block {
+
+        let mut block = Block::new(
             index,
-            timestamp,
-            nonce: 0,
-            proof: previous_block.proof + 1,
-            transactions: self.current_transactions.clone(),
             previous_hash,
-            hash: "".to_string(),
-            payload: data,
-        };
+            "".to_string(),
+            self.current_transactions.clone()
+        );
+
         let hash = calculate_hash(&block);
-        let block = Block { hash, ..block };
+        block.header.hash = hash;
         self.blocks.push(block);
-        self.current_transactions = vec![];
+        self.current_transactions = Vec::new();
+    }
+
+    pub fn add_block(&mut self, block : Block) {
+
     }
 
     pub fn block_count(&self) -> usize {
@@ -82,6 +87,7 @@ impl Blockchain {
                     return false;
                 }
             }
+
             let hash = calculate_hash(block);
             if hash != block.hash {
                 return false;
@@ -161,4 +167,3 @@ impl Blockchain {
     }
 
 }
-*/

@@ -35,3 +35,5 @@ pub const BALANCE_FACTOR: f64 = 0.65;
 pub const WEIGHT_REPUTATION : f64 = 0.2;
 pub const WEIGHT_RISK : f64 = 1.0- WEIGHT_REPUTATION as f64;
 
+//Blockchain
+pub const BLOCKCHAIN_VERSION : u8 = 1;
