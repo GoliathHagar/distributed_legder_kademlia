@@ -55,8 +55,8 @@ impl Block {
     pub fn new(index: u64, version : u8, previous_hash: String,
                hash: String, merkle_root: String, transactions: Vec<Transaction> ) -> Block {
         Self{
-            header: BlockHeader::new( index: index,
-                                      version: version,
+            header: BlockHeader::new( index,
+                                      version,
                                       previous_hash,
                                       hash,
                                       Block::calculate_merkle_tree(transactions.clone()),
