@@ -19,4 +19,15 @@ pub struct Transaction {
     pub signature: String,
 }
 
-
+impl Transaction {
+    /// Creates a new transaction with the specified details.
+    pub fn new(id: String, sender: String, recipient: String, amount: f64, signature: String) -> Self {
+        Transaction {
+            id,
+            sender,
+            recipient,
+            amount,
+            signature,
+        }
+    }
+}
