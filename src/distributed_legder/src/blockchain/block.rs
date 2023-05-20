@@ -1,7 +1,8 @@
 use serde::{Serialize, Deserialize};
+use crate::blockchain::blockchain::calculate_hash;
 use crate::blockchain::transaction::Transaction;
 use crate::constants::fixed_sizes::BLOCKCHAIN_VERSION;
-use crate::constants::utils::{calculate_sha256, get_timestamp_now};
+use crate::constants::utils::{calculate_block_hash, calculate_sha256, get_timestamp_now};
 
 /// Represents a block in the blockchain.
 
@@ -79,7 +80,17 @@ impl Block {
         self.header.merkle_root.eq(&mt)
     }
 
+
     pub fn is_valid(&self){
+        let string_hash = calculate_block_hash(self);
+
+        // Convert the hash to binary string
+        let binary_hash = hex::decode(string_hash).unwrap().iter()
+            .map(|byte| format!("{:08b}", byte))
+            .collect::<String>();
+
+        // Verify the most significant bits
+        let verified = binary_hash.chars().take(n).all(|c| c == '0');
 
     }
 

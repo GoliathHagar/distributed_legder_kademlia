@@ -15,17 +15,6 @@ pub struct Blockchain {
     consensus_algorithm: ConsensusAlgorithm,
 }
 
-pub fn calculate_hash(block: &Block) -> String {
-    let blk_hdr = block.header.clone();
-    let data = format!(
-        "{}{}{}{}{}{}",
-        blk_hdr.index, blk_hdr.version, blk_hdr.timestamp, blk_hdr.previous_hash,
-        blk_hdr.merkle_root, blk_hdr.nonce);
-
-    let hash = calculate_sha256(&data);
-    hex::encode(hash)
-}
-
 impl Blockchain {
     pub fn new(consensus_algorithm: ConsensusAlgorithm) -> Self {
         let mut  genesis_block = Block::new(
