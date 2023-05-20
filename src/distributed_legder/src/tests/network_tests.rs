@@ -1,14 +1,14 @@
+use std::sync::Arc;
+use std::thread;
+
+use crate::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
+use crate::constants::utils::get_local_ip;
 use crate::dht::kademlia::KademliaDHT;
-use crate::network::rpc::Rpc;
 use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::key::Key;
 use crate::network::node::Node;
-use std::sync::Arc;
-use std::thread;
-use std::time::{Duration, Instant};
-use crate::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
-use crate::constants::utils::get_local_ip;
+use crate::network::rpc::Rpc;
 
 #[test]
 fn two_way_handshake_ping_pong() {

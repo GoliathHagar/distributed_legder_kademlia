@@ -1,5 +1,3 @@
-use std::string::ToString;
-
 // BYTES 8 BITS
 pub const BYTE: usize = 8;
 

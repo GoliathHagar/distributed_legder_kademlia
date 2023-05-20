@@ -1,7 +1,7 @@
-use serde::{Serialize, Deserialize};
-use ring::digest;
 use ring::rand::SystemRandom;
-use ring::signature::{self, KeyPair};
+use ring::signature::{self};
+use serde::{Deserialize, Serialize};
+
 use crate::constants::utils::calculate_sha256;
 
 /// Represents a transaction in the blockchain.
@@ -21,12 +21,13 @@ pub struct Transaction {
 
     /// The signature of the transaction signed by the auction owner.
     pub signature: Option<String>,
+    /// The signature of the transaction signed by the auction owner.
+    pub public_key: Option<String>,
 }
 
 impl Transaction {
     /// Creates a new transaction with the specified details.
-    pub fn new(sender: String, recipient: String, amount: f64, signature: String) -> Self {
-
+    pub fn new(sender: String, recipient: String, amount: f64) -> Self {
         let id = Transaction::calculate_id(&sender, &recipient, amount);
         Transaction {
             id,
@@ -34,6 +35,7 @@ impl Transaction {
             recipient,
             amount,
             signature: None,
+            public_key: None,
         }
     }
 

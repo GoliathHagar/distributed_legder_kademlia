@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use std::convert::TryInto;
+use std::sync::{Arc, Mutex};
 
+use log::error;
 use sha1::Digest;
 use sha2::Sha256;
 
@@ -9,25 +9,25 @@ use crate::blockchain::consensus::ConsensusAlgorithm;
 use crate::blockchain::miner::Miner;
 use crate::blockchain::transaction::Transaction;
 use crate::constants::fixed_sizes::ZEROS_HASH;
-use crate::constants::utils::{calculate_block_hash, calculate_sha256, get_timestamp_now};
+use crate::constants::utils::calculate_block_hash;
 
 pub struct Blockchain {
-    pub(self) blocks: Vec<Block>,
+    pub(self) blocks: Arc<Mutex<Vec<Block>>>,
     // valid by pow/pos blocks
-    current_transactions: Vec<Transaction>,
+    current_transactions: Arc<Mutex<Vec<Transaction>>>,
     consensus_algorithm: ConsensusAlgorithm,
 }
 
 impl Blockchain {
     pub fn new(consensus_algorithm: ConsensusAlgorithm) -> Self {
         Self {
-            blocks: Vec::new(),
-            current_transactions: Vec::new(),
+            blocks: Arc::new(Mutex::new(Vec::new())),
+            current_transactions: Arc::new(Mutex::new(Vec::new())),
             consensus_algorithm,
         }
     }
 
-    pub fn init(mut self, is_bootstrap: bool) {
+    pub fn init(self) -> Block {
         let mut genesis_block = Block::new(
             0,
             "0".to_string(),
@@ -42,22 +42,30 @@ impl Blockchain {
         let nonce = Miner {}.proof_of_work(genesis_block.clone());
         genesis_block.header.nonce = nonce;
 
-        let block = genesis_block;
-
-        //todo: sent to network new block added
-
-        self.add_block(block);
-
-        //network broadcast
+        genesis_block
     }
 
     pub fn create_block(&mut self) {
-        if self.current_transactions.is_empty() { return; }
+        let mut transactions = match self.current_transactions.lock() {
+            Ok(sv) => sv,
+            Err(_) => {
+                error!("Failed to acquire lock on transactions");
+                return;
+            }
+        };
 
-        let previous_block = self.blocks.last().unwrap();
+        let blocks = match self.blocks.lock() {
+            Ok(sv) => sv,
+            Err(_) => {
+                error!("Failed to acquire lock on blocks");
+                return;
+            }
+        };
+
+        if transactions.is_empty() { return; }
+
+        let previous_block = blocks.last().unwrap();
         let index = previous_block.header.index + 1;
-
-        let timestamp = get_timestamp_now();
 
         let previous_hash = previous_block.header.hash.clone();
 
@@ -65,26 +73,33 @@ impl Blockchain {
             index,
             previous_hash,
             "".to_string(),
-            self.current_transactions.clone()
+            transactions.clone(),
         );
 
         let hash = calculate_block_hash(&block);
         block.header.hash = hash;
-        self.current_transactions = Vec::new();
+        transactions.clear();
     }
 
     pub fn add_block(&mut self, block : Block) -> bool {
-        if self.blocks.is_empty()
+        let mut blocks = match self.blocks.lock() {
+            Ok(sv) => sv,
+            Err(_) => {
+                error!("Failed to acquire lock on blocks");
+                return false;
+            }
+        };
+
+        if blocks.is_empty()
             && block.header.previous_hash.eq(ZEROS_HASH) && block.is_valid() {
-            self.blocks.push(block);
+            blocks.push(block);
 
             return true;
-        }
-        else {
-            let prv_hsh = self.blocks.last().unwrap().clone().header.hash;
+        } else {
+            let prv_hsh = blocks.last().unwrap().clone().header.hash;
 
             if block.header.previous_hash == prv_hsh && block.is_valid() {
-                self.blocks.push(block);
+                blocks.push(block);
 
                 return true;
             }
@@ -99,13 +114,29 @@ impl Blockchain {
     }
 
     pub fn block_count(&self) -> usize {
-        self.blocks.len()
+        let blocks = match self.blocks.lock() {
+            Ok(sv) => sv,
+            Err(e) => {
+                error!("Failed to acquire lock on blocks");
+                panic!("{}", e.to_string());
+            }
+        };
+
+        blocks.len()
     }
 
     pub fn is_valid(&self) -> bool {
-        for (i, block) in self.blocks.iter().enumerate() {
+        let blocks = match self.blocks.lock() {
+            Ok(sv) => sv,
+            Err(e) => {
+                error!("Failed to acquire lock on blocks");
+                panic!("{}", e.to_string());
+            }
+        };
+
+        for (i, block) in blocks.iter().enumerate() {
             if i > 0 {
-                let previous_block = &self.blocks[i - 1];
+                let previous_block = &blocks[i - 1];
                 if block.header.previous_hash != previous_block.header.hash {
                     return false;
                 }
