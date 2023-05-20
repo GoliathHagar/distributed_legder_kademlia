@@ -1,28 +1,27 @@
 use sha2::Sha256;
-use hex::encode;
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::blockchain::block::Block;
 use crate::blockchain::transaction::Transaction;
 use crate::blockchain::consensus::ConsensusAlgorithm;
 use std::convert::TryInto;
 use sha1::Digest;
-
-pub fn calculate_hash(block: &Block) -> String {
-    let mut hasher = Sha256::new();
-    let data = format!(
-        "{}{}{}{}{}",
-        block.index, block.timestamp, block.proof, block.transactions.len(), block.previous_hash
-    );
-    hasher.update(data.as_bytes());
-    let hash = hasher.finalize();
-    hex::encode(hash)
-}
-
+use crate::constants::utils::calculate_sha256;
 
 pub struct Blockchain {
     pub blocks: Vec<Block>,
     current_transactions: Vec<Transaction>,
     consensus_algorithm: ConsensusAlgorithm,
+}
+
+
+pub fn calculate_hash(block: &Block) -> String {
+    let data = format!(
+        "{}{}{}{}{}",
+        block.index, block.timestamp, block.proof, block.transactions.len(), block.previous_hash
+    );
+
+    let hash = calculate_sha256(&data);
+    hex::encode(hash)
 }
 
 impl Blockchain {
