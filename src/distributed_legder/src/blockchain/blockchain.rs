@@ -38,7 +38,7 @@ impl Blockchain {
         let hash = calculate_hash(&genesis_block);
         genesis_block.header.hash = hash;
 
-        let blocks = Vec::from(genesis_block);
+        let blocks = Vec::from([genesis_block]);
 
         Self {
             blocks,
@@ -55,7 +55,7 @@ impl Blockchain {
 
         let timestamp = get_timestamp_now();
 
-        let previous_hash = previous_block.hash.clone();
+        let previous_hash = previous_block.header.hash.clone();
 
         let mut block = Block::new(
             index,
@@ -82,13 +82,13 @@ impl Blockchain {
         for (i, block) in self.blocks.iter().enumerate() {
             if i > 0 {
                 let previous_block = &self.blocks[i - 1];
-                if block.previous_hash != previous_block.hash {
+                if block.header.previous_hash != previous_block.header.hash {
                     return false;
                 }
             }
 
             let hash = calculate_hash(block);
-            if hash != block.hash {
+            if hash != block.header.hash {
                 return false;
             }
         }

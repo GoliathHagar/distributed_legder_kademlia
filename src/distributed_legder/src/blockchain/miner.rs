@@ -1,4 +1,3 @@
-use std::intrinsics::likely;
 use crate::blockchain::block::Block;
 
 pub struct Miner{
