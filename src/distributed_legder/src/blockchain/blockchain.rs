@@ -1,17 +1,19 @@
 use std::collections::HashMap;
-use sha2::Sha256;
-use std::time::{SystemTime, UNIX_EPOCH};
-use crate::blockchain::block::Block;
-use crate::blockchain::transaction::Transaction;
-use crate::blockchain::consensus::ConsensusAlgorithm;
 use std::convert::TryInto;
+
 use sha1::Digest;
+use sha2::Sha256;
+
+use crate::blockchain::block::Block;
+use crate::blockchain::consensus::ConsensusAlgorithm;
 use crate::blockchain::miner::Miner;
-use crate::constants::fixed_sizes::{BLOCKCHAIN_VERSION, ZEROS_HASH};
+use crate::blockchain::transaction::Transaction;
+use crate::constants::fixed_sizes::ZEROS_HASH;
 use crate::constants::utils::{calculate_block_hash, calculate_sha256, get_timestamp_now};
 
 pub struct Blockchain {
-    pub blocks: Vec<Block>, // valid by pow/pos blocks
+    pub(self) blocks: Vec<Block>,
+    // valid by pow/pos blocks
     current_transactions: Vec<Transaction>,
     consensus_algorithm: ConsensusAlgorithm,
 }
@@ -25,8 +27,8 @@ impl Blockchain {
         }
     }
 
-    pub fn init(self){
-        let mut  genesis_block = Block::new(
+    pub fn init(mut self, is_bootstrap: bool) {
+        let mut genesis_block = Block::new(
             0,
             "0".to_string(),
             "0".to_string(),
@@ -35,11 +37,18 @@ impl Blockchain {
 
         let hash = calculate_block_hash(&genesis_block);
         genesis_block.header.hash = hash;
+        genesis_block.header.timestamp = 0;
 
-        let nonce = Miner{}.proof_of_work(genesis_block.clone());
+        let nonce = Miner {}.proof_of_work(genesis_block.clone());
         genesis_block.header.nonce = nonce;
 
-        let blocks = Vec::from([genesis_block]);
+        let block = genesis_block;
+
+        //todo: sent to network new block added
+
+        self.add_block(block);
+
+        //network broadcast
     }
 
     pub fn create_block(&mut self) {

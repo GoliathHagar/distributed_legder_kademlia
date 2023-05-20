@@ -1,21 +1,22 @@
 use crate::blockchain::block::Block;
 use crate::blockchain::blockchain::Blockchain;
-use crate::constants::utils::calculate_block_hash;
 use crate::blockchain::miner::Miner;
 use crate::blockchain::transaction::Transaction;
 use crate::constants::fixed_sizes::ZEROS_HASH;
+use crate::constants::utils::calculate_block_hash;
+
 //use crate::blockchain::blockchain::calculate_hash;
 
 #[test]
-fn test_block_is_valid() {
+fn test_mining_pow_block_and_validate() {
     // Create a sample block
-    let mut  block = Block::new(
+    let mut block = Block::new(
         0,
         ZEROS_HASH.to_string(),
         "".to_string(),
         Vec::from([
-            Transaction::new("sad".to_string(),"dpr".to_string(),100000.0,"d".to_string()),
-            Transaction::new("sad2".to_string(),"dpr2".to_string(),100000.0,"d".to_string())])
+            Transaction::new("sad".to_string(), "dpr".to_string(), 100000.0, "d".to_string()),
+            Transaction::new("sad2".to_string(), "dpr2".to_string(), 100000.0, "d".to_string())]),
     );
     println!("initial {:?}", block);
 
