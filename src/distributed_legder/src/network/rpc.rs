@@ -9,11 +9,9 @@ pub enum Rpc {
     FindNode(Key),
     FindValue(String),
 
-    Multicasting(String, String),
-    Bootstrapping(String),
+    Multicasting(String, String, String), //id, type_info, serialized info
 
     Pong,
     FindNodeReply(Vec<Node>),
     FindValueReply(String, String),
-    BootstrappingReply(String)
 }

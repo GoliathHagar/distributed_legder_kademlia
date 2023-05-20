@@ -11,4 +11,6 @@ pub struct Transaction {
 
     /// The amount of the transaction.
     pub amount: f64,
+
+    
 }

@@ -37,8 +37,8 @@ impl Server {
                     }
                 };
 
-                debug!(
-                    "Source address {} Destination address {}",
+                info!(
+                    "Incoming request source address {} destination address {}",
                     src_addr,
                     app.service.node.get_address()
                 );
@@ -95,7 +95,7 @@ impl Server {
         };
     }
 
-    fn request_handler(app: Arc<KademliaDHT>, payload: Datagram) {
+    fn  request_handler(app: Arc<KademliaDHT>, payload: Datagram) {
         thread::spawn(move || {
             match KademliaDHT::handle_request(app.clone(), payload.clone()) {
                 Some(payload) => {

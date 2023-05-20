@@ -7,14 +7,17 @@ use crate::network::key::Key;
 use crate::network::node::Node;
 use crate::network::rpc_socket::RpcSocket;
 use crate::network::server::Server;
-use log::{error, info};
+use log::{debug, error, info};
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fs::create_dir_all;
 use std::io::Write;
 use std::ops::{Deref, Index};
-use std::sync::{Arc, Mutex};
+use std::ptr::null;
+use std::sync::{Arc, mpsc, Mutex, MutexGuard};
+use std::sync::mpsc::{Receiver, RecvError, Sender};
 use std::thread;
 use std::thread::JoinHandle;
+use std::time::Duration;
 
 #[derive(Clone, Debug)]
 pub struct KademliaDHT {
@@ -22,28 +25,32 @@ pub struct KademliaDHT {
     pub store_values: Arc<Mutex<HashMap<String, String>>>,
     pub service: Arc<RpcSocket>,
     pub node: Arc<Node>,
-    pub bt: Option<Node>,
+    pub bootstrap_node: Option<Node>,
+    subscription_sender: Arc<Mutex<Sender<Rpc>>>,
+    pub subscription_receiver: Arc<Mutex<Receiver<Rpc>>>
 }
 
 impl KademliaDHT {
     pub fn new(node: Node, bootstrap_node: Option<Node>) -> KademliaDHT {
         let routing = RoutingTable::new(Arc::new(node.clone()), bootstrap_node.clone()); //Todo: Routing Table
         let rpc = RpcSocket::new(node.clone());
+        let (sender, receiver) = mpsc::channel();
 
-        info!("Node id [{:?}] created read to start", node.id);
+        info!("Node id [{:?}] created and ready to start", node.id);
 
         Self {
             routing_table: Arc::new(Mutex::new(routing)),
             store_values: Arc::new(Mutex::new(HashMap::new())),
             service: Arc::new(rpc),
             node: Arc::new(node.clone()),
-            bt: bootstrap_node
+            subscription_sender: Arc::new(Mutex::new(sender)),
+            subscription_receiver: Arc::new(Mutex::new(receiver)),
+            bootstrap_node
         }
     }
 
-    pub fn init(self, path: Option<String>) -> JoinHandle<()> {
-        let kdl = Arc::new(self.clone());
-        let ss =   self.start_server();
+    pub fn init(self : Arc<Self>, path: Option<String>) -> JoinHandle<()> {
+        let kdl = self.clone();
 
         let kad = kdl.clone();
         thread::spawn(move || loop {
@@ -66,19 +73,20 @@ impl KademliaDHT {
 
         }
 
-        ss
+        self.start_server()
     }
 
-    fn start_server(self) -> JoinHandle<()> {
-        let kdl = Arc::new(self.clone());
+    fn start_server(self : Arc<Self>) -> JoinHandle<()> {
+        let kdl = self.clone();
         let server = Server::new(kdl.clone());
         let server_thread = server.start_service();
 
-        if let Some(bt)=kdl.bt.clone(){
-            Client::new(kdl.service.clone())
-                .make_call(Rpc::Bootstrapping("ip:salt".to_string()),bt);
-        }
-        kdl.node_lookup(&self.node.id);
+        info!("Bootstrapping Node lookup initiated");
+        kdl.clone().node_lookup(&self.node.id);
+        /*if let Some(n) = self.bootstrap_node{
+            println!("ive ping to boot");
+            kdl.ping(n);
+        }*/
 
         server_thread
     }
@@ -92,6 +100,7 @@ impl KademliaDHT {
             }
         };
 
+
         for (key, value) in &*store_value {
             self.clone().put(key.to_string(), value.to_string());
         }
@@ -102,10 +111,7 @@ impl KademliaDHT {
         let proto = app.clone();
 
         let resp: Option<Datagram> = match req.data {
-            Rpc::Bootstrapping(_) => proto.bootstrapping_reply(payload),
-            Rpc::Multicasting(_, _) => proto.multicast_reply(payload),
-
-
+            Rpc::Multicasting(_, _, _) => proto.handel_multicast(payload),
             Rpc::Ping => proto.ping_reply(payload),
             Rpc::FindNode(_) => proto.find_node_reply(payload),
             Rpc::FindValue(_) => proto.find_value_reply(payload),
@@ -222,30 +228,23 @@ impl KademliaDHT {
         None
     }
 
-    pub(self) fn multicast_reply(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
-
-
-        return Some(Datagram {
-            token_id: payload.token_id,
-            source: payload.source,
-            destination: payload.destination,
-            data_type: DatagramType::RESPONSE,
-            data: Rpc::Pong,
-        });
+    pub(self) fn handel_multicast(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
+        println!("broadcast {:?}", payload);
+        info!("broadcast {:?}", payload);
+        if let Ok(sub) = self.subscription_sender.lock(){
+            if let Err(_d) = sub.send(payload.data){
+                error!("Failed to publish multicast packet");
+            }
+        }
+        None
 
     }
 
-    pub(self) fn bootstrapping_reply(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
 
+    pub fn multicast_subscriber(self: Arc<Self>,) -> Rpc {
+       let sub = self.subscription_receiver.lock().unwrap();
 
-        return Some(Datagram {
-            token_id: payload.token_id,
-            source: payload.source,
-            destination: payload.destination,
-            data_type: DatagramType::RESPONSE,
-            data: Rpc::Pong,
-        });
-
+        sub.recv().unwrap()
     }
 
     pub(self) fn node_lookup(self: Arc<Self>, key: &Key) -> Vec<RoutingDistance> {
@@ -309,6 +308,7 @@ impl KademliaDHT {
 
                     for nd in nds {
                         if queried.insert(nd.clone()) {
+                           // if nd.clone().0.id == self.node.id.clone() { continue; }
                             to_query.push(nd)
                         }
                     }
@@ -472,6 +472,13 @@ impl KademliaDHT {
             }
         };
     }
+    fn broadcast(self: Arc<Self>, payload: Rpc, destination: Node) -> Receiver<Option<Datagram>> {
+        let client = Client::new(self.service.clone());
+
+        client.make_call(payload, destination.clone())
+
+    }
+
     fn find_node(self: Arc<Self>, key: Key, destination: Node) -> Option<Vec<RoutingDistance>> {
         let nodes: Vec<RoutingDistance> = Vec::new();
 
@@ -543,6 +550,19 @@ impl KademliaDHT {
             let payload = (key.clone(), value.clone());
 
             thread::spawn(move || kad.store(payload, node));
+        }
+
+    }
+
+    pub fn broadcast_info(self: Arc<Self>, info : (String, String, String)) {
+        let mut candidates = self.clone().node_lookup(&self.node.id.clone());
+
+        for RoutingDistance(node, _) in candidates {
+            debug!("Candidate {:?}", node);
+            let kad = self.clone();
+            let payload = Rpc::Multicasting(info.clone().0, info.clone().1, info.clone().2);
+
+            thread::spawn(move || kad.broadcast(payload, node));
         }
 
     }

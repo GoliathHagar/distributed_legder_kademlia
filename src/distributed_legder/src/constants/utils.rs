@@ -1,6 +1,11 @@
 use sha1::Sha1;
 use sha2::{Digest, Sha256};
 use std::net::UdpSocket;
+use chrono::Utc;
+
+pub fn get_timestamp_now() -> u64 {
+    Utc::now().timestamp_nanos() as u64
+}
 
 pub fn calculate_sha256(value: &String) -> Vec<u8> {
     let mut hasher = Sha256::new();
@@ -16,19 +21,19 @@ pub fn calculate_sha1(value: &String) -> Vec<u8> {
     hasher.finalize().to_vec()
 }
 
-pub fn get_local_ip() -> Option<String> {
+pub fn get_local_ip() -> String {
     let socket = match UdpSocket::bind("0.0.0.0:0") {
         Ok(s) => s,
-        Err(_) => return None,
+        Err(_) => return "127.0.0.1".to_string(),
     };
 
     match socket.connect("1.1.1.1:80") {
         Ok(()) => (),
-        Err(_) => return None,
+        Err(_) => return "127.0.0.1".to_string(),
     };
 
-    match socket.local_addr() {
-        Ok(addr) => return Some(addr.ip().to_string()),
-        Err(_) => return None,
+    return match socket.local_addr() {
+        Ok(addr) => addr.ip().to_string(),
+        Err(_) => "127.0.0.1".to_string(),
     };
 }
