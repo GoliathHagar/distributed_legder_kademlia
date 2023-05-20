@@ -84,15 +84,10 @@ impl Block {
         let string_hash = calculate_block_hash(self);
 
         let decoded_hash = hex::decode(string_hash).unwrap();
+        let bytes_needed = (BLOCKCHAIN_MINING_DIFFICULTY + 7) / 8;
 
-        // Determine the byte index and bit offset
-        let byte_index = BLOCKCHAIN_MINING_DIFFICULTY / 8;
-        let bit_offset = BLOCKCHAIN_MINING_DIFFICULTY % 8;
-
-        // Verify the most significant bits
-        let mask: u8 = 0xFF << (8 - bit_offset);
-
-        decoded_hash[byte_index] & mask == 0
+        // Check if the first bytes_needed bytes are all zeros
+        decoded_hash[..bytes_needed].iter().all(|&byte| byte == 0)
 
     }
 

@@ -1,26 +1,37 @@
 use crate::blockchain::block::Block;
 use crate::blockchain::blockchain::Blockchain;
 use crate::constants::utils::calculate_block_hash;
+use crate::blockchain::miner::Miner;
 //use crate::blockchain::blockchain::calculate_hash;
 
 #[test]
 fn test_block_is_valid() {
     // Create a sample block
-    let block = Block::new(
+    let mut  block = Block::new(
         0,
         "0000000000000000000000000000000000000000000000000000000000000000".to_owned(),
         "".to_string(),
         Vec::new()
     );
 
+    let miner = Miner{};
+
+    let nonce = miner.proof_of_work(block.clone());
     // Calculate the block's hash and convert it to a hexadecimal string
+
+    block.header.nonce = nonce;
+
     let string_hash = calculate_block_hash(&block);
+    let binary_hash = hex::decode(string_hash.clone()).unwrap().iter()
+        .map(|byte| format!("{:08b}-", byte))
+        .collect::<String>();
 
     // Verify the block's validity
     let is_valid = block.is_valid();
 
+    println!("Nonce {} Hash {} bin {}", nonce, string_hash, binary_hash);
     // Assert that the block is valid
-    assert_eq!(is_valid, true);
+    assert_eq!(is_valid, true)
 }
 
 /*

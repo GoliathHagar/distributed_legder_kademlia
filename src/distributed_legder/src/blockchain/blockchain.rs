@@ -7,7 +7,7 @@ use crate::blockchain::consensus::ConsensusAlgorithm;
 use std::convert::TryInto;
 use sha1::Digest;
 use crate::constants::fixed_sizes::BLOCKCHAIN_VERSION;
-use crate::constants::utils::{calculate_sha256, get_timestamp_now};
+use crate::constants::utils::{calculate_block_hash, calculate_sha256, get_timestamp_now};
 
 pub struct Blockchain {
     pub blocks: Vec<Block>, // valid by pow/pos blocks
@@ -24,7 +24,7 @@ impl Blockchain {
             Vec::new(),
         );
 
-        let hash = calculate_hash(&genesis_block);
+        let hash = calculate_block_hash(&genesis_block);
         genesis_block.header.hash = hash;
 
         let blocks = Vec::from([genesis_block]);
@@ -53,7 +53,7 @@ impl Blockchain {
             self.current_transactions.clone()
         );
 
-        let hash = calculate_hash(&block);
+        let hash = calculate_block_hash(&block);
         block.header.hash = hash;
         self.blocks.push(block);
         self.current_transactions = Vec::new();
@@ -76,7 +76,7 @@ impl Blockchain {
                 }
             }
 
-            let hash = calculate_hash(block);
+            let hash = calculate_block_hash(block);
             if hash != block.header.hash {
                 return false;
             }
@@ -84,7 +84,7 @@ impl Blockchain {
         true
     }
 
-    /// Add a new transaction to the transaction pool
+   /* /// Add a new transaction to the transaction pool
     pub fn add_transaction(&mut self, sender: String, recipient: String, amount: f64) {
         let transaction = Transaction {
             sender,
@@ -92,7 +92,7 @@ impl Blockchain {
             amount,
         };
         self.current_transactions.push(transaction);
-    }
+    }*/
 
     fn valid_proof(self, last_proof: u128, proof: u128) -> bool {
         let guess = format!("{}{}", last_proof, proof);
@@ -102,7 +102,7 @@ impl Blockchain {
         guess_hash.starts_with(&[0, 0, 0, 0])
     }
 
-    /// Mine a new block
+  /*  /// Mine a new block
     pub fn mine_block(&mut self, miner_address: String) -> Result<(), String> {
         let last_block = self.blocks.last().clone().unwrap();
         let proof = match self.consensus_algorithm {
@@ -135,7 +135,7 @@ impl Blockchain {
 
         Ok(())
     }
-
+*/
     fn delegated_proof_of_stake(&self) -> Result<u128, String> {
         // Logic for delegated proof of stake
 

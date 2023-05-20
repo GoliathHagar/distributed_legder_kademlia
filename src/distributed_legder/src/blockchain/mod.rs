@@ -2,4 +2,4 @@ pub mod blockchain;
 pub mod block;
 pub mod transaction;
 pub mod consensus;
-mod miner;
+pub mod miner;

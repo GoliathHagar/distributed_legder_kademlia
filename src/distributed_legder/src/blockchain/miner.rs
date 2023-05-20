@@ -4,7 +4,7 @@ pub struct Miner{
 
 }
 impl Miner {
-    fn proof_of_work(self, block: Block) -> u128 {
+    pub fn proof_of_work(self, block: Block) -> u128 {
         let mut nonce = block.header.nonce.clone();
 
         while !self.valid_proof(block.clone(), nonce) {
@@ -15,11 +15,12 @@ impl Miner {
     }
 
 
-    fn valid_proof(&self, block: Block, nounce: u128) -> bool {
-        let mining_block = block.header.clone();
+    fn valid_proof(&self, block: Block, nonce: u128) -> bool {
+        let mut mining_block = block.clone();
 
-        block
+        mining_block.header.nonce = nonce;
 
+        mining_block.is_valid()
     }
 
 
