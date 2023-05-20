@@ -1,4 +1,4 @@
-use crypto::aes::KeySize::KeySize256;
+/*use crypto::aes::KeySize::KeySize256;
 use crypto::aes::ecb_decryptor_generic;
 use crypto::aes::ecb_encryptor_generic;
 use crypto::padding::NoPadding;
@@ -83,3 +83,4 @@ impl Bid {
         hash
     }
 }
+*/
