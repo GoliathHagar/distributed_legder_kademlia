@@ -1,6 +1,27 @@
 use crate::blockchain::block::Block;
 use crate::blockchain::blockchain::Blockchain;
+use crate::constants::utils::calculate_block_hash;
 //use crate::blockchain::blockchain::calculate_hash;
+
+#[test]
+fn test_block_is_valid() {
+    // Create a sample block
+    let block = Block::new(
+        0,
+        "0000000000000000000000000000000000000000000000000000000000000000".to_owned(),
+        "".to_string(),
+        Vec::new()
+    );
+
+    // Calculate the block's hash and convert it to a hexadecimal string
+    let string_hash = calculate_block_hash(&block);
+
+    // Verify the block's validity
+    let is_valid = block.is_valid();
+
+    // Assert that the block is valid
+    assert_eq!(is_valid, true);
+}
 
 /*
 #[test]

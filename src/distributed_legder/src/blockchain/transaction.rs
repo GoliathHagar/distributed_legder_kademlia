@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 use ring::digest;
 use ring::rand::SystemRandom;
 use ring::signature::{self, KeyPair};
+use crate::constants::utils::calculate_sha256;
 
 /// Represents a transaction in the blockchain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,10 +39,8 @@ impl Transaction {
 
     /// Calculates the ID of the transaction as a hash of the sender, recipient, and amount.
     fn calculate_id(sender: &str, recipient: &str, amount: f64) -> String {
-        let mut hasher = Sha256::new();
         let data = format!("{}{}{}", sender, recipient, amount);
-        hasher.update(data.as_bytes());
-        let hash = hasher.finalize();
+        let hash = calculate_sha256(&data);
         hex::encode(hash)
     }
 
