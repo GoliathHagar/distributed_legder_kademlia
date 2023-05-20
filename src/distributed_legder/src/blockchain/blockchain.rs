@@ -13,7 +13,7 @@ pub struct Blockchain {
     consensus_algorithm: ConsensusAlgorithm,
 }
 
-
+/*
 pub fn calculate_hash(block: &Block) -> String {
     let data = format!(
         "{}{}{}{}{}",
@@ -30,15 +30,15 @@ impl Blockchain {
             index: 0,
             timestamp: 0,
             nonce: 0,
-            transactions: vec![],
+            transactions: Vec::new(),
             proof: 0,
             previous_hash: "0".to_string(),
             hash: "".to_string(),
-            data: "".to_string(),
+            payload: "".to_string(),
         };
         let hash = calculate_hash(&genesis_block);
         let genesis_block = Block { hash, ..genesis_block };
-        let blocks = vec![genesis_block];
+        let blocks = Vec::from(genesis_block);
         Self {
             blocks,
             current_transactions: vec![],
@@ -62,7 +62,7 @@ impl Blockchain {
             transactions: self.current_transactions.clone(),
             previous_hash,
             hash: "".to_string(),
-            data,
+            payload: data,
         };
         let hash = calculate_hash(&block);
         let block = Block { hash, ..block };
@@ -120,7 +120,7 @@ impl Blockchain {
             proof: proof.try_into().unwrap(),
             previous_hash,
             hash: String::new(),
-            data: "".to_string(),
+            payload: "".to_string(),
         };
 
         // Calculate the hash of the new block and update the block with it
@@ -161,3 +161,4 @@ impl Blockchain {
     }
 
 }
+*/

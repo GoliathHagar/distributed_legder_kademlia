@@ -1,6 +1,11 @@
 use sha1::Sha1;
 use sha2::{Digest, Sha256};
 use std::net::UdpSocket;
+use chrono::Utc;
+
+pub fn get_timestamp_now() -> u64 {
+    Utc::now().timestamp_nanos() as u64
+}
 
 pub fn calculate_sha256(value: &String) -> Vec<u8> {
     let mut hasher = Sha256::new();
