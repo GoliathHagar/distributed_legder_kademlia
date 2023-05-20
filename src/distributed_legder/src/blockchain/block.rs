@@ -53,14 +53,14 @@ impl BlockHeader{
 
 impl Block {
     pub fn new(index: u64, version : u8, previous_hash: String,
-               hash: String, merkle_root: String, nonce: u128, transactions: Vec<Transaction> ) -> Block {
+               hash: String, merkle_root: String, transactions: Vec<Transaction> ) -> Block {
         Self{
             header: BlockHeader::new( index: index,
                                       version: version,
-                                      timestamp: get_timestamp_now(),
                                       previous_hash,
                                       hash,
-                                      nonce,),
+                                      Block::calculate_merkle_tree(transactions.clone()),
+                                      0,),
             transactions
         }
     }
