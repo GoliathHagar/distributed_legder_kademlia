@@ -10,6 +10,7 @@ use std::thread::JoinHandle;
 use log::{debug, error, info};
 
 use crate::constants::fixed_sizes::{ALPHA, DUMP_STATE_TIMEOUT, K_BUCKET_SIZE, REPUBLISH_TIMEOUT};
+use crate::constants::multicast_info_type::MulticastInfoType;
 use crate::dht::routing_table::{Bucket, RoutingDistance, RoutingTable};
 use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
@@ -552,7 +553,7 @@ impl KademliaDHT {
 
     }
 
-    pub fn broadcast_info(self: Arc<Self>, info : (String, String, String)) {
+    pub fn broadcast_info(self: Arc<Self>, info: (String, MulticastInfoType, String)) {
         let candidates = self.clone().node_lookup(&self.node.id.clone());
 
         for RoutingDistance(node, _) in candidates {

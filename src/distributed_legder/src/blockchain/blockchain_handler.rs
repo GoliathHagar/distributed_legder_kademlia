@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
+use log::info;
+
 use crate::blockchain::blockchain::Blockchain;
 use crate::blockchain::consensus::ConsensusAlgorithm;
+use crate::constants::blockchain_node_type::BlockchainNodeType;
 use crate::constants::fixed_sizes::RESPONSE_TIMEOUT;
 use crate::dht::kademlia::KademliaDHT;
 use crate::network::node::Node;
@@ -9,18 +12,18 @@ use crate::network::node::Node;
 struct BlockchainHandler {
     pub(self) blockchain: Arc<Blockchain>,
     pub(self) kademlia: Arc<KademliaDHT>,
-    pub(self) is_bootstrap: bool,
+    pub(self) node_type: BlockchainNodeType,
 }
 
 impl BlockchainHandler {
-    pub fn new(consensus: ConsensusAlgorithm, node: Node, bootstrap: Option<Node>) -> BlockchainHandler {
+    pub fn new(consensus: ConsensusAlgorithm, node: Node, node_type: BlockchainNodeType, bootstrap: Option<Node>) -> BlockchainHandler {
         let kad = Arc::new(KademliaDHT::new(node, bootstrap.clone()));
         let chain = Arc::new(Blockchain::new(consensus));
 
         Self {
             blockchain: chain,
             kademlia: kad,
-            is_bootstrap: bootstrap.is_some(),
+            node_type,
         }
     }
 
@@ -39,12 +42,13 @@ impl BlockchainHandler {
 
         std::thread::spawn(move || loop {
             let payload = kad.clone().multicast_subscriber();
+            let block =
+                info!("Received payload {:?}", payload);
 
-            blk.is_valid();
+            if self.node_type == BlockchainNodeType::Bootstrap && blk.is_valid() {}
+
 
             //todo task on block chain
-
-            println!("ok fui dormir {:?}", payload);
         });
     }
 }
