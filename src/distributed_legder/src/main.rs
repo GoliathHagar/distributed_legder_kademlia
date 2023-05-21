@@ -3,6 +3,7 @@ use std::thread;
 
 use log::{debug, info};
 
+use distributed_legder::auctions::auction::AuctionUI;
 use distributed_legder::blockchain::blockchain_handler::BlockchainHandler;
 use distributed_legder::blockchain::consensus::ConsensusAlgorithm;
 use distributed_legder::constants::blockchain_node_type::BlockchainNodeType;
@@ -27,6 +28,12 @@ fn main() {
     );
 
     let tb = blockchain.start("state_dumps/self.json");
+
+    let aution = AuctionUI::new();
+
+    aution.main_menu();
+
+
     tb.join().expect("TODO: panic message");
     /*   let new_node = Node::new(get_local_ip(), 1422);
 

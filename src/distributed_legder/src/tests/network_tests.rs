@@ -1,9 +1,12 @@
 use std::sync::Arc;
 use std::thread;
 
+use crate::blockchain::block::Block;
+use crate::blockchain::consensus::ConsensusAlgorithm;
+use crate::blockchain::miner::Miner;
 use crate::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
 use crate::constants::multicast_info_type::MulticastInfoType;
-use crate::constants::utils::get_local_ip;
+use crate::constants::utils::{block_to_string, calculate_block_hash, get_local_ip};
 use crate::dht::kademlia::KademliaDHT;
 use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
@@ -300,15 +303,23 @@ fn test_broadcast_nodes() {
     let c1c = contact1.clone();
     let c2c = contact2.clone();
 
+    //
     let t0 = bt.clone().init(Some("state_dumps/test-network-boot-1.json".to_string()));
     let t1 = contact1.init(Some("state_dumps/test-network-1.json".to_string()));
     let t2 = contact2.init(Some("state_dumps/test-network-2.json".to_string()));
 
-    let expected = ("id".to_string(), MulticastInfoType::Miscellaneous, "info".to_string());
+    let mut block = Block::new(1, "00003dca675c73c6ac10ee45c57bdf80e3137bef8d8373a4e63a613d4fde03f2".to_string(), "".to_string(), Vec::new());
 
-    c1c.clone().put(expected.clone().0, expected.clone().2 );
+    let nonce = Arc::new(Miner::new(ConsensusAlgorithm::ProofOfWork)).mine_block(block.clone());
+    block.header.nonce = nonce;
+    let id = calculate_block_hash(&block);
+    block.header.hash = id.clone();
 
-    c1c.broadcast_info((expected.clone().0, expected.clone().1, expected.clone().2 ));
+    let expected = (id, MulticastInfoType::Block, block_to_string(block));
+
+    c1c.clone().put(expected.clone().0, expected.clone().2);
+
+    c1c.broadcast_info((expected.clone().0, expected.clone().1, expected.clone().2));
 
     let binfo = c2c.multicast_subscriber();
 
@@ -316,13 +327,15 @@ fn test_broadcast_nodes() {
     thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
 
     client.clone().datagram_request(kill.clone());
+    //
     client.clone().datagram_request(kill1.clone());
     client.datagram_request(kill_self.clone());
 
     t1.join().expect("thead 1 dead");
     t2.join().expect("thead 1 dead");
+
+    //
     t0.join().expect("thread 2 dead");
 
     assert_eq!(Rpc::Multicasting(expected.0, expected.1, expected.2), binfo);
-
 }

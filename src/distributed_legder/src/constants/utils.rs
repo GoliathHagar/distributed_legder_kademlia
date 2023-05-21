@@ -2,6 +2,8 @@ use std::net::UdpSocket;
 
 use chrono::Utc;
 use log::error;
+use ring::rand::SystemRandom;
+use ring::signature;
 use sha1::Sha1;
 use sha2::{Digest, Sha256};
 
@@ -56,6 +58,19 @@ pub fn string_to_block(bl: String) -> Block {
     }
 }
 
+/// Calculates the signature of the transaction data.
+pub fn calculate_signature(data: &str) -> String {
+    // Generate a new key pair
+    let rng = SystemRandom::new();
+    let pkcs8_bytes = signature::Ed25519KeyPair::generate_pkcs8(&rng).unwrap();
+    let key_pair = signature::Ed25519KeyPair::from_pkcs8(pkcs8_bytes.as_ref()).unwrap();
+
+    // Sign the data
+    let signature = key_pair.sign(data.as_bytes());
+
+    // Convert the signature to a hexadecimal string
+    hex::encode(signature.as_ref())
+}
 
 pub fn get_local_ip() -> String {
     let socket = match UdpSocket::bind("0.0.0.0:0") {

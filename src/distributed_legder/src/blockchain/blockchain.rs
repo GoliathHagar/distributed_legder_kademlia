@@ -2,7 +2,7 @@ use std::fs::create_dir_all;
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 
-use log::{error, info};
+use log::{debug, error, info, warn};
 use sha1::Digest;
 use sha2::Sha256;
 
@@ -129,6 +129,8 @@ impl Blockchain {
             }
         };
 
+        debug!("Blockchain blocks {:?}", blocks.clone());
+
         if blocks.is_empty() && block.is_valid() {
             blocks.push(block);
 
@@ -136,10 +138,12 @@ impl Blockchain {
         } else {
             let prv_hsh = blocks.last().unwrap().clone().header.hash;
 
-            if block.header.previous_hash == prv_hsh && block.is_valid() {
+            if block.header.previous_hash.eq(&prv_hsh) && block.is_valid() {
                 blocks.push(block);
 
                 return true;
+            } else {
+                warn!("Block validation failed");
             }
 
         }

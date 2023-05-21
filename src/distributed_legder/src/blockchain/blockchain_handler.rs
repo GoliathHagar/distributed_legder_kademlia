@@ -50,7 +50,7 @@ impl BlockchainHandler {
 
     fn handel_broadcast_blocks(self) {
         let kad = self.kademlia.clone();
-        let mut blk = self.blockchain.clone();
+        let mut blockchain = self.blockchain.clone();
 
         info!("Blockchain started awaiting blocks ...");
 
@@ -63,27 +63,38 @@ impl BlockchainHandler {
                     if payload_type == MulticastInfoType::Block {
                         let mut block: Block = string_to_block(p);
 
-                        if self.clone().node_type == BlockchainNodeType::Bootstrap && blk.clone().is_chain_valid() {
-                            let mut found = Vec::new();
-                            let mut bl = block.clone();
-                            let mut searching = true;
+                        if self.clone().node_type == BlockchainNodeType::Bootstrap && blockchain.clone().is_chain_valid() {
+                            info!("Blockchain received block {:?}", block.clone());
 
-                            while searching {
-                                if let Some(b) = kad.get(bl.header.previous_hash.clone()) {
-                                    let new = string_to_block(b);
+                            if !blockchain.clone().add_block(block.clone()) && block.is_valid() {
+                                let mut found = Vec::new();
+                                let mut bl = block.clone();
+                                let mut searching = true;
 
-                                    if blk.add_block(new.clone()) {
+                                while searching {
+                                    if let Some(b) = kad.clone().get(bl.header.previous_hash.clone()) {
+                                        let new = string_to_block(b);
+
+                                        if blockchain.clone().add_block(new.clone()) {
+                                            searching = false;
+                                        }
+
+                                        bl = new.clone();
+                                        found.push(new);
+                                    } else {
                                         searching = false;
+                                        error!("Previous block not found in network {:?}", bl);
                                     }
-
-                                    found.push(new);
+                                    for b in found.iter() {
+                                        blockchain.clone().add_block(b.clone());
+                                    }
                                 }
+                                found.reverse();
                             }
 
-                            if !blk.clone().add_block(block) {}
                         } else if self.clone().node_type == BlockchainNodeType::Miner {
                             if block.is_valid() {
-                                blk.clone().notify_miner(id)
+                                blockchain.clone().notify_miner(id)
                             } else {
                                 self.clone().worker_nine(block);
                             }

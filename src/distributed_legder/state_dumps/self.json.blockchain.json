@@ -1,1 +1,36 @@
-{"blockchain":{"blocks":[{"block":{"header":{"hash":"00003dca675c73c6ac10ee45c57bdf80e3137bef8d8373a4e63a613d4fde03f2","index":0,"merkle_root":"","nonce":10220,"previous_hash":"0","timestamp":0,"version":1},"transactions":[]}}],"pendent_translations":[]},"consensus_algorithm":"ProofOfWork"}
+{
+  "blockchain": {
+    "blocks": [
+      {
+        "block": {
+          "header": {
+            "hash": "00003dca675c73c6ac10ee45c57bdf80e3137bef8d8373a4e63a613d4fde03f2",
+            "index": 0,
+            "merkle_root": "",
+            "nonce": 10220,
+            "previous_hash": "0",
+            "timestamp": 0,
+            "version": 1
+          },
+          "transactions": []
+        }
+      },
+      {
+        "block": {
+          "header": {
+            "hash": "000042d1fed8c3e04ce585f421494904c50a1003458e73a998a608f9a2990583",
+            "index": 1,
+            "merkle_root": "",
+            "nonce": 47620,
+            "previous_hash": "00003dca675c73c6ac10ee45c57bdf80e3137bef8d8373a4e63a613d4fde03f2",
+            "timestamp": 1684708360419115039,
+            "version": 1
+          },
+          "transactions": []
+        }
+      }
+    ],
+    "pendent_translations": []
+  },
+  "consensus_algorithm": "ProofOfWork"
+}

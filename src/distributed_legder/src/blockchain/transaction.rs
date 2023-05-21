@@ -2,7 +2,7 @@ use ring::rand::SystemRandom;
 use ring::signature::{self};
 use serde::{Deserialize, Serialize};
 
-use crate::constants::utils::calculate_sha256;
+use crate::constants::utils::{calculate_sha256, calculate_signature};
 
 /// Represents a transaction in the blockchain.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,23 +49,11 @@ impl Transaction {
     /// Signs the transaction based on the hash of the ID, sender, recipient, and amount.
     pub fn sign(&mut self) {
         let data = format!("{}{}{}{}", self.id, self.sender, self.recipient, self.amount);
-        let signature = Transaction::calculate_signature(&data);
+        let signature = calculate_signature(&data);
         self.signature = Some(signature);
     }
 
-    /// Calculates the signature of the transaction data.
-    fn calculate_signature(data: &str) -> String {
-        // Generate a new key pair
-        let rng = SystemRandom::new();
-        let pkcs8_bytes = signature::Ed25519KeyPair::generate_pkcs8(&rng).unwrap();
-        let key_pair = signature::Ed25519KeyPair::from_pkcs8(pkcs8_bytes.as_ref()).unwrap();
 
-        // Sign the data
-        let signature = key_pair.sign(data.as_bytes());
-
-        // Convert the signature to a hexadecimal string
-        hex::encode(signature.as_ref())
-    }
 }
 
 impl PartialEq for Transaction {

@@ -1,4 +1,85 @@
-use std::io::{self, BufRead};
+use std::convert::TryInto;
+use std::io::{self, BufRead, Write};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use ring::signature::KeyPair;
+
+use crate::blockchain::transaction::Transaction;
+use crate::constants::fixed_sizes::KEY_SIZE;
+use crate::constants::utils::calculate_signature;
+use crate::network::key::Key;
+use crate::network::node::Node;
+
+pub struct Auction {
+    auction_id: [u8; KEY_SIZE],
+    auctioneer_node_id: String,
+    auction_name: String,
+    minimum_bid: f32,
+    auction_duration: u64,
+    // in minutes
+    initial_ts: u64,
+    auctioneer_pk: String,
+    signature: String,
+}
+
+impl Auction {
+    pub fn new(auction_name: String, auctioneer_node_id: String, minimum_bid: f32, initial_ts: u64,
+               auction_duration: u64, auctioneer: String, signature: String) -> Self {
+        let auction_id = Auction::generate_id(&auction_name, initial_ts);
+
+        Auction {
+            auction_id,
+            auctioneer_node_id,
+            auction_name,
+            minimum_bid,
+            auction_duration,
+            initial_ts,
+            auctioneer_pk: auctioneer,
+            signature,
+        }
+    }
+
+    pub fn with_defaults(auction_name: String, auctioneer_node_id: String, minimum_bid: f32,
+                         auction_duration: u64, auctioneer: String) -> Self {
+        let initial_ts = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+
+        let auction_id = Auction::generate_id(&auction_name, initial_ts);
+
+        Auction {
+            auction_id,
+            auctioneer_node_id,
+            auction_name,
+            minimum_bid,
+            auction_duration,
+            initial_ts,
+            auctioneer_pk: auctioneer,
+            signature: "".to_string(),
+        }
+    }
+
+    pub fn get_final_ts(&self) -> u64 {
+        self.initial_ts + self.auction_duration
+    }
+
+    fn generate_id(auction_name: &str, initial_ts: u64) -> [u8; 32] {
+        Key::new(format!("{}:{}", auction_name, initial_ts)).0
+    }
+
+    pub fn initialize_new_auction(node: Node, auction_name: String, duration_in_millis: u64, min_bid: f32, owner_keys: String) -> Self {
+        let auction = Auction::with_defaults(auction_name,
+                                             format!("{:?}", node.id.clone()), min_bid, duration_in_millis, owner_keys.clone());
+
+        let signature = calculate_signature(owner_keys.as_str());
+
+        Auction {
+            signature,
+            ..auction
+        }
+    }
+}
 
 pub struct AuctionUI {
     stdin: io::Stdin,
@@ -13,9 +94,9 @@ impl AuctionUI {
         }
     }
 
-    pub fn main_menu(&self) -> i32 {
+    pub fn main_menu(&self) {
         println!("1) New auction");
-        println!("2) Find auctions");
+        println!("2) Join auction");
         println!("3) Exit");
         print!("Choice: ");
         io::stdout().flush().unwrap();
@@ -23,18 +104,22 @@ impl AuctionUI {
         let mut choice = String::new();
         self.stdin.read_line(&mut choice).unwrap();
 
-        let choice = choice.trim().parse().unwrap_or(0);
+        let mut choice_parsed = choice.trim().parse().unwrap_or(0);
 
-        while choice <= 0 || choice > self.max_rows {
+        while choice_parsed <= 0 || choice_parsed > self.max_rows {
             print!("Bad option, choose again: ");
             io::stdout().flush().unwrap();
 
-            let mut choice = String::new();
             self.stdin.read_line(&mut choice).unwrap();
-            let choice = choice.trim().parse().unwrap_or(0);
+            choice_parsed = choice.trim().parse().unwrap_or(0);
         }
 
-        choice
+        match choice_parsed {
+            1 => { self.new_auction_menu() },
+            2 => { self.ongoing_auction() },
+            3 => {},
+            _ => {}
+        }
     }
 
     pub fn new_auction_menu(&self) {
@@ -73,7 +158,7 @@ impl AuctionUI {
 
         let mut cont = 1;
         for auction in &auctions {
-            println!("{} ) {}", cont, auction.get_auction_name());
+            println!("{} ) {}", cont, auction.auction_name);
             cont += 1;
         }
 
@@ -98,10 +183,10 @@ impl AuctionUI {
     pub fn bid_auction(&self, chosen_auction: &Auction) {
         println!("** MENU TO BID THE ITEM **\n");
 
-        println!("Name of the item: {}", chosen_auction.get_auction_name());
-        println!("Starting bid of the item: {}", chosen_auction.get_minimum_bid());
+        println!("Name of the item: {}", chosen_auction.auction_name);
+        println!("Starting bid of the item: {}", chosen_auction.minimum_bid);
 
-        let initial_date = chosen_auction.get_initial_ts();
+        let initial_date = chosen_auction.initial_ts;
         let final_date = chosen_auction.get_final_ts();
         println!("Start of auction: {}", initial_date);
         println!("End of auction: {}", final_date);
