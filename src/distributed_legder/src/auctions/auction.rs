@@ -1,4 +1,4 @@
-/*use std::io::{self, BufRead};
+use std::io::{self, BufRead};
 
 pub struct AuctionUI {
     stdin: io::Stdin,
@@ -116,4 +116,3 @@ impl AuctionUI {
         // TODO: Create a new bid with the chosen auction and bid amount
     }
 }
-*/

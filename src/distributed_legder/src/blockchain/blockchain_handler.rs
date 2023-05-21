@@ -11,7 +11,7 @@ use crate::blockchain::miner::Miner;
 use crate::constants::blockchain_node_type::BlockchainNodeType;
 use crate::constants::fixed_sizes::RESPONSE_TIMEOUT;
 use crate::constants::multicast_info_type::MulticastInfoType;
-use crate::constants::utils::{block_to_string, calculate_block_hash};
+use crate::constants::utils::{block_to_string, calculate_block_hash, string_to_block};
 use crate::dht::kademlia::KademliaDHT;
 use crate::network::node::Node;
 use crate::network::rpc::Rpc;
@@ -61,16 +61,24 @@ impl BlockchainHandler {
             match payload {
                 Rpc::Multicasting(id, payload_type, p) => {
                     if payload_type == MulticastInfoType::Block {
-                        let mut block: Block = match serde_json::from_str(&p) {
-                            Ok(d) => d,
-                            Err(e) => {
-                                error!("Unable to decode block string payload: {}", e.to_string());
-                                debug!("Payload unknown [{}]", p.trim_end());
-                                continue;
-                            }
-                        };
+                        let mut block: Block = string_to_block(p);
 
                         if self.clone().node_type == BlockchainNodeType::Bootstrap && blk.clone().is_chain_valid() {
+                            let mut found = Vec::new();
+                            let mut bl = block.clone();
+                            let mut searching = true;
+
+                            while searching {
+                                if let Some(b) = kad.get(bl.header.previous_hash.clone()) {
+                                    let new = string_to_block(b);
+
+                                    if blk.add_block(new.clone()) {
+                                        searching = false;
+                                    }
+
+                                    found.push(new);
+                                }
+                            }
                             if !blk.clone().add_block(block) {}
                         } else if self.clone().node_type == BlockchainNodeType::Miner {
                             if block.is_valid() {

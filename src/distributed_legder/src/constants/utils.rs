@@ -46,6 +46,17 @@ pub fn block_to_string(block: Block) -> String {
     }
 }
 
+pub fn string_to_block(bl: String) -> Block {
+    match serde_json::from_str(&bl) {
+        Ok(d) => d,
+        Err(e) => {
+            error!("Unable to decode block string payload: {}", e.to_string());
+            panic!("{}", e.to_string());
+        }
+    }
+}
+
+
 pub fn get_local_ip() -> String {
     let socket = match UdpSocket::bind("0.0.0.0:0") {
         Ok(s) => s,

@@ -1,13 +1,3 @@
-/*use crypto::aes::KeySize::KeySize256;
-use crypto::aes::ecb_decryptor_generic;
-use crypto::aes::ecb_encryptor_generic;
-use crypto::padding::NoPadding;
-use crypto::symmetriccipher::Decryptor;
-use crypto::symmetriccipher::Encryptor;
-use rust_crypto::digest::Digest;
-use rust_crypto::sha3::Sha3;
-use std::time::SystemTime;
-use std::io::{self, BufRead};
 
 pub struct Bid {
     bid_id: Vec<u8>,
@@ -83,4 +73,3 @@ impl Bid {
         hash
     }
 }
-*/

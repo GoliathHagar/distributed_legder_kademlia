@@ -129,8 +129,7 @@ impl Blockchain {
             }
         };
 
-        if blocks.is_empty()
-            && block.header.previous_hash.eq(ZEROS_HASH) && block.is_valid() {
+        if blocks.is_empty() && block.is_valid() {
             blocks.push(block);
 
             return true;
