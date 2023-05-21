@@ -11,7 +11,7 @@ use crate::blockchain::miner::Miner;
 use crate::constants::blockchain_node_type::BlockchainNodeType;
 use crate::constants::fixed_sizes::RESPONSE_TIMEOUT;
 use crate::constants::multicast_info_type::MulticastInfoType;
-use crate::constants::utils::block_to_string;
+use crate::constants::utils::{block_to_string, calculate_block_hash};
 use crate::dht::kademlia::KademliaDHT;
 use crate::network::node::Node;
 use crate::network::rpc::Rpc;
@@ -38,7 +38,7 @@ impl BlockchainHandler {
         let block = self.blockchain.clone().init();
 
         if let Some(b) = block {
-            let data = block_to_string(b);
+            let data = block_to_string(b.clone());
             self.kademlia.clone().broadcast_info((b.header.hash, MulticastInfoType::Miscellaneous, data))
         }
 
@@ -70,15 +70,14 @@ impl BlockchainHandler {
                         if self.node_type == BlockchainNodeType::Bootstrap && blk.clone().is_chain_valid() {
                             blk.clone().add_block(block);
                         } else if self.node_type == BlockchainNodeType::Miner {
+
                             if block.is_valid() {
-                                mining.index(&block.header.hash).;
+                                blk.notify_miner(id)
                             } else {
-                                let bch = self.blockchain.clone();
+                                self.worker_nine(block);
                             }
                         }
 
-
-                        //todo task on block chain
                     }
                 }
                 _ => { continue; }
@@ -91,11 +90,13 @@ impl BlockchainHandler {
         let kad = self.kademlia.clone();
         let mine = std::thread::spawn(
             move || {
-                let blk = bch.mine_block(block);
+                let blk = bch.mine_block(block.clone());
 
-                bch.add_block(blk);
+                bch.add_block(blk.clone());
 
-                kad.broadcast_info(block.header.hash, MulticastInfoType::Block)
+                kad.broadcast_info(
+                    (block.header.hash, MulticastInfoType::Block, block_to_string(blk))
+                );
             }
         );
     }

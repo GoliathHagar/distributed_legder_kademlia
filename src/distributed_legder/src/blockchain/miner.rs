@@ -18,8 +18,20 @@ impl Miner {
 
         Self {
             consensus,
-            mining_blocks,
+            mining_blocks: mining,
         }
+    }
+
+    pub fn set_mined_hash(self, hash: String) {
+        let mut mining = match self.mining_blocks.lock() {
+            Ok(m) => m,
+            Err(e) => {
+                error!("Unable to decode block string payload: {}", e.to_string());
+                panic!("{}", e.to_string());
+            }
+        };
+
+        mining.insert(hash, true);
     }
 
     pub fn mine_block(self, block: Block) -> u128 {
@@ -60,7 +72,7 @@ impl Miner {
                     }
                 };
 
-                if mining.index(&block.header.hash) {
+                if *mining.index(&block.header.hash) {
                     break;
                 }
 
@@ -68,6 +80,7 @@ impl Miner {
             }
         }
 
+        self.set_mined_hash(block.header.hash);
         nonce
     }
 
