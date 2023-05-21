@@ -1,15 +1,16 @@
-use crate::constants::fixed_sizes::{ENABLE_THRUST_MECHANISM, KEY_SIZE, K_BUCKET_SIZE, N_BUCKETS, BALANCE_FACTOR};
-use crate::network::rpc::Rpc;
+use std::cmp::Ordering;
+use std::collections::HashMap;
+use std::ops::Index;
+use std::sync::Arc;
+
+use log::{debug, error};
+
+use crate::constants::fixed_sizes::{K_BUCKET_SIZE, KEY_SIZE, N_BUCKETS};
 use crate::network::client::Client;
 use crate::network::key::Key;
 use crate::network::node::{Node, ThrustAndReputation};
+use crate::network::rpc::Rpc;
 use crate::network::rpc_socket::RpcSocket;
-use log::{debug, error, info};
-use std::cmp::Ordering;
-use std::collections::HashMap;
-use std::ops::{Deref, Index};
-use std::process::id;
-use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub struct Bucket {
@@ -44,7 +45,7 @@ impl Bucket {
 impl RoutingTable {
     pub fn new(node: Arc<Node>, bootstrap: Option<Node>) -> RoutingTable {
         let mut buckets: Vec<Bucket> = Vec::new();
-        let mut reputation = HashMap::new();
+        let reputation = HashMap::new();
 
         for _ in 0..N_BUCKETS {
             buckets.push(Bucket::new())
@@ -81,24 +82,6 @@ impl RoutingTable {
         }
 
         KEY_SIZE * 8 - 1
-    }
-
-    fn node_find_bucket_index_thrust(&self, key: &Key) -> usize {
-        let bucket_index = self.node_find_bucket_index(key);
-
-        let node : Option<&Node> = self.buckets[bucket_index]
-            .nodes.iter().find(
-            |nd| nd.id.0 == key.0 );
-
-        if ENABLE_THRUST_MECHANISM {
-            if let Some(n) = node{
-                //nd = od × b + (1 − b) ×1/t
-                return ((bucket_index as f64 )* BALANCE_FACTOR + (1.0 - BALANCE_FACTOR)/key.thrust(self.reputation.index(key))) as usize
-            }
-        }
-
-       bucket_index
-
     }
 
     pub fn get_closest_nodes(&self, key: &Key, capacity: usize) -> Vec<RoutingDistance> {
@@ -184,7 +167,7 @@ impl RoutingTable {
             let nd = self.buckets[index].nodes[0].clone();
 
             match Client::new(rpc.unwrap()).make_call(Rpc::Ping,nd.clone()).recv() {
-                Ok(pong) =>  if let Some(p) = pong {
+                Ok(pong) => if let Some(_) = pong {
                     let add_front = self.buckets[index].nodes.remove(0);
                     self.buckets[index].nodes.push(add_front.clone());
 

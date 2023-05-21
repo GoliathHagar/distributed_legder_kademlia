@@ -2,9 +2,21 @@ use sha1::Sha1;
 use sha2::{Digest, Sha256};
 use std::net::UdpSocket;
 use chrono::Utc;
+use crate::blockchain::block::Block;
 
 pub fn get_timestamp_now() -> u64 {
     Utc::now().timestamp_nanos() as u64
+}
+
+pub fn calculate_block_hash(block: &Block) -> String {
+    let blk_hdr = block.header.clone();
+    let data = format!(
+        "{}{}{}{}{}{}",
+        blk_hdr.index, blk_hdr.version, blk_hdr.timestamp, blk_hdr.previous_hash,
+        blk_hdr.merkle_root, blk_hdr.nonce);
+
+    let hash = calculate_sha256(&data);
+    hex::encode(hash)
 }
 
 pub fn calculate_sha256(value: &String) -> Vec<u8> {

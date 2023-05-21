@@ -1,11 +1,13 @@
+use std::{str, thread};
+use std::sync::Arc;
+use std::thread::JoinHandle;
+
+use log::{debug, error, info, warn};
+
 use crate::constants::fixed_sizes::UDP_STREAMING_BUFFER_SIZE;
 use crate::dht::kademlia::KademliaDHT;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::rpc_socket::RpcSocket;
-use log::{debug, error, info, warn};
-use std::sync::Arc;
-use std::thread::JoinHandle;
-use std::{str, thread};
 
 #[derive(Clone, Debug)]
 pub struct Server {
@@ -18,7 +20,6 @@ impl Server {
     }
 
     pub fn start_service(self) -> JoinHandle<()> {
-        //todo: insure only one listener a time for a node
         info!(
             "Initializing node services at {}",
             self.app.node.get_address()

@@ -1,14 +1,15 @@
+use std::sync::Arc;
+use std::thread;
+
+use crate::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
+use crate::constants::multicast_info_type::MulticastInfoType;
+use crate::constants::utils::get_local_ip;
 use crate::dht::kademlia::KademliaDHT;
-use crate::network::rpc::Rpc;
 use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::key::Key;
 use crate::network::node::Node;
-use std::sync::Arc;
-use std::thread;
-use std::time::{Duration, Instant};
-use crate::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
-use crate::constants::utils::get_local_ip;
+use crate::network::rpc::Rpc;
 
 #[test]
 fn two_way_handshake_ping_pong() {
@@ -303,7 +304,7 @@ fn test_broadcast_nodes() {
     let t1 = contact1.init(Some("state_dumps/test-network-1.json".to_string()));
     let t2 = contact2.init(Some("state_dumps/test-network-2.json".to_string()));
 
-    let expected = ("id".to_string(), "type".to_string(), "info".to_string());
+    let expected = ("id".to_string(), MulticastInfoType::Miscellaneous, "info".to_string());
 
     c1c.clone().put(expected.clone().0, expected.clone().2 );
 

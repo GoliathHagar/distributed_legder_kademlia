@@ -1,23 +1,24 @@
-use crate::constants::fixed_sizes::{ALPHA, DUMP_STATE_TIMEOUT, K_BUCKET_SIZE, REPUBLISH_TIMEOUT};
-use crate::dht::routing_table::{Bucket, RoutingDistance, RoutingTable};
-use crate::network::rpc::Rpc;
-use crate::network::client::Client;
-use crate::network::datagram::{Datagram, DatagramType};
-use crate::network::key::Key;
-use crate::network::node::Node;
-use crate::network::rpc_socket::RpcSocket;
-use crate::network::server::Server;
-use log::{debug, error, info};
+use std::{str, thread};
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fs::create_dir_all;
 use std::io::Write;
 use std::ops::{Deref, Index};
-use std::ptr::null;
-use std::sync::{Arc, mpsc, Mutex, MutexGuard};
-use std::sync::mpsc::{Receiver, RecvError, Sender};
-use std::thread;
+use std::sync::{Arc, mpsc, Mutex};
+use std::sync::mpsc::{Receiver, Sender};
 use std::thread::JoinHandle;
-use std::time::Duration;
+
+use log::{debug, error, info};
+
+use crate::constants::fixed_sizes::{ALPHA, DUMP_STATE_TIMEOUT, K_BUCKET_SIZE, REPUBLISH_TIMEOUT};
+use crate::constants::multicast_info_type::MulticastInfoType;
+use crate::dht::routing_table::{Bucket, RoutingDistance, RoutingTable};
+use crate::network::client::Client;
+use crate::network::datagram::{Datagram, DatagramType};
+use crate::network::key::Key;
+use crate::network::node::Node;
+use crate::network::rpc::Rpc;
+use crate::network::rpc_socket::RpcSocket;
+use crate::network::server::Server;
 
 #[derive(Clone, Debug)]
 pub struct KademliaDHT {
@@ -26,13 +27,13 @@ pub struct KademliaDHT {
     pub service: Arc<RpcSocket>,
     pub node: Arc<Node>,
     pub bootstrap_node: Option<Node>,
-    subscription_sender: Arc<Mutex<Sender<Rpc>>>,
-    pub subscription_receiver: Arc<Mutex<Receiver<Rpc>>>
+    pub(self) subscription_sender: Arc<Mutex<Sender<Rpc>>>,
+    pub subscription_receiver: Arc<Mutex<Receiver<Rpc>>>,
 }
 
 impl KademliaDHT {
     pub fn new(node: Node, bootstrap_node: Option<Node>) -> KademliaDHT {
-        let routing = RoutingTable::new(Arc::new(node.clone()), bootstrap_node.clone()); //Todo: Routing Table
+        let routing = RoutingTable::new(Arc::new(node.clone()), bootstrap_node.clone());
         let rpc = RpcSocket::new(node.clone());
         let (sender, receiver) = mpsc::channel();
 
@@ -171,7 +172,6 @@ impl KademliaDHT {
     }
 
     pub(self) fn find_value_reply(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
-        //Todo: find_value -> se não tiver o Nó envia os k Nós mais próximos do valor??
         if let Rpc::FindValue(k) = payload.data.clone() {
             let store_value = match self.store_values.lock() {
                 Ok(sv) => sv,
@@ -205,7 +205,6 @@ impl KademliaDHT {
     }
 
     pub(self) fn store_reply(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
-        //Todo: store
         if let Rpc::Store(k, value) = payload.data {
             let mut store_value = match self.store_values.lock() {
                 Ok(sv) => sv,
@@ -543,7 +542,7 @@ impl KademliaDHT {
     }
 
     pub fn put(self: Arc<Self>, key: String, value: String) {
-        let mut candidates = self.clone().node_lookup(&self.node.id.clone());
+        let candidates = self.clone().node_lookup(&self.node.id.clone());
 
         for RoutingDistance(node, _) in candidates {
             let kad = self.clone();
@@ -554,8 +553,8 @@ impl KademliaDHT {
 
     }
 
-    pub fn broadcast_info(self: Arc<Self>, info : (String, String, String)) {
-        let mut candidates = self.clone().node_lookup(&self.node.id.clone());
+    pub fn broadcast_info(self: Arc<Self>, info: (String, MulticastInfoType, String)) {
+        let candidates = self.clone().node_lookup(&self.node.id.clone());
 
         for RoutingDistance(node, _) in candidates {
             debug!("Candidate {:?}", node);
@@ -645,25 +644,17 @@ impl KademliaDHT {
                     "id": format!("{:?}", nd.id),
                 },
                 "routes": {
-                    /*"node": {
-                        "ip": routes.node.ip,
-                        "port": routes.node.port,
-                        "id": format!("{:?}", routes.node.id),
-                    },*/
-                    "kbuckets": parsed_buckets,
+                    "buckets": parsed_buckets,
                 },
                 "store": parsed_store,
                 "rpc": {
                     "socket": format!("{:?}", self.service.socket),
                     "awaiting_response": format!("{:?}", self.service.awaiting_response.lock().unwrap()),
-                    /*"node": {
-                        "ip": self.service.node.ip,
-                        "port": self.service.node.port,
-                        "id": format!("{:?}", self.service.node.id),
-                    },*/
-                }
+                },
+                "subscription_receiver": format!("{:?}", self.subscription_sender.lock().unwrap())
             }
         );
+
 
         let mut file = match std::fs::File::create(path) {
             Ok(f) => f,

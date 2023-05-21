@@ -1,14 +1,15 @@
 use std::sync::Arc;
 use std::thread;
-use crate::constants::fixed_sizes::{DUMP_STATE_TIMEOUT, KEY_SIZE, N_BUCKETS};
+
+use crate::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
 use crate::constants::utils::get_local_ip;
 use crate::dht::kademlia::KademliaDHT;
-use crate::dht::routing_table::{Bucket, RoutingTable};
-use crate::network::rpc::Rpc;
+use crate::dht::routing_table::RoutingTable;
 use crate::network::client::Client;
 use crate::network::datagram::{Datagram, DatagramType};
 use crate::network::key::Key;
 use crate::network::node::Node;
+use crate::network::rpc::Rpc;
 
 #[test]
 fn distance_to_self() {
@@ -136,13 +137,13 @@ fn routing_table_building() {
     let ac3 = contact3.clone();
     let ac4 = contact4.clone();
 
-    let t0 = boot_stap_node.clone().init(Some("state_dumps/test-contact-1.json".to_string()));
+    let t0 = boot_stap_node.clone().init(Some("state_dumps/test-bootstrap-1.json".to_string()));
     let t1 = contact1.clone().init(Some("state_dumps/test-contact-1.json".to_string()));
     let t2 = contact2.clone().init(Some("state_dumps/test-contact-2.json".to_string()));
     let t3 = contact3.clone().init(Some("state_dumps/test-contact-3.json".to_string()));
     let t4 = contact4.clone().init(Some("state_dumps/test-contact-4.json".to_string()));
 
-    let loc = if let Ok(l) = contact1.routing_table.lock() {
+    if let Ok(l) = contact1.routing_table.lock() {
         let cls = l.get_closest_nodes(
             &Node::new(get_local_ip(), 1543).id,
             20,

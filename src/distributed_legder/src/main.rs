@@ -1,52 +1,56 @@
+use std::sync::Arc;
+use std::thread;
+
+use log::{debug, info};
+
+use distributed_legder::blockchain::blockchain_handler::BlockchainHandler;
+use distributed_legder::blockchain::consensus::ConsensusAlgorithm;
+use distributed_legder::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
 use distributed_legder::constants::utils::get_local_ip;
 use distributed_legder::dht::kademlia::KademliaDHT;
-use distributed_legder::network::rpc::Rpc;
 use distributed_legder::network::datagram::{Datagram, DatagramType};
 use distributed_legder::network::key::Key;
 use distributed_legder::network::node::Node;
-use log::{debug, info};
-use std::sync::Arc;
-use std::thread;
-use distributed_legder::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
-//use distributed_legder::blockchain::blockchain::Blockchain;
-//use distributed_legder::blockchain::consensus::ConsensusAlgorithm;
+use distributed_legder::network::rpc::Rpc;
 
 fn main() {
     env_logger::init();
 
     let current_node = Node::new(get_local_ip(), 1432);
 
-    let new_node = Node::new(get_local_ip(), 1422);
+    let blockchain = BlockchainHandler::new(ConsensusAlgorithm::ProofOfWork)
 
-    let kad = Arc::new(KademliaDHT::new(current_node.clone(), None));
+    /*   let new_node = Node::new(get_local_ip(), 1422);
 
-    let kadc = kad.clone();
+       let kad = Arc::new(KademliaDHT::new(current_node.clone(), None));
 
-    let threa1 = kad.init(Some("state_dumps/self.json".to_string()));
+       let kadc = kad.clone();
 
-    thread::sleep(std::time::Duration::from_millis(2*DUMP_STATE_TIMEOUT));
-    kadc.clone().put(
-        "test00".to_string(),
-        "It works, this value was stored successifully".to_string(),
-    );
-    thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
+       let threa1 = kad.init(Some("state_dumps/self.json".to_string()));
 
-    kadc.clone().put(
-        "claudia".to_string(),
-        "It works, this value was stored successifully".to_string(),
-    );
+       thread::sleep(std::time::Duration::from_millis(2*DUMP_STATE_TIMEOUT));
+       kadc.clone().put(
+           "test00".to_string(),
+           "It works, this value was stored successifully".to_string(),
+       );
+       thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
 
-    debug!("Done initial setup");
-    let kad2 = Arc::new(KademliaDHT::new(new_node.clone(), Some(current_node)));
+       kadc.clone().put(
+           "claudia".to_string(),
+           "It works, this value was stored successifully".to_string(),
+       );
 
-    let t2 = kad2.clone().init(Some("state_dumps/self-node.json".to_string()));
+       debug!("Done initial setup");
+       let kad2 = Arc::new(KademliaDHT::new(new_node.clone(), Some(current_node)));
 
-    debug!("Done initial setup");
+       let t2 = kad2.clone().init(Some("state_dumps/self-node.json".to_string()));
 
-    kad2.clone().broadcast_info(("main".to_string(), "test".to_string(), "this is a test".to_string()));
+       debug!("Done initial setup");
 
-    threa1.join().expect("thead: dead");
-    t2.join().expect("thead: dead");
+       kad2.clone().broadcast_info(("main".to_string(), "test".to_string(), "this is a test".to_string()));
+
+       threa1.join().expect("thead: dead");
+       t2.join().expect("thead: dead");*/
 
 
 

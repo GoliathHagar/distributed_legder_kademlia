@@ -1,10 +1,7 @@
-use std::ops::Add;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicI32, Ordering};
-use crate::network::key::Key;
 use serde::{Deserialize, Serialize};
-use sha1::digest::consts::U32;
+
 use crate::constants::fixed_sizes::{WEIGHT_REPUTATION, WEIGHT_RISK};
+use crate::network::key::Key;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct Node {
@@ -64,8 +61,8 @@ impl ThrustAndReputation {
 
         if total_interaction == 0 { return 1; }
 
-        ((successfully_interaction -  (total_interaction - successfully_interaction))
-            / total_interaction)
+        (successfully_interaction - (total_interaction - successfully_interaction))
+            / total_interaction
     }
 
     /**
