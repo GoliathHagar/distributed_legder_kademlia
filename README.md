@@ -10,7 +10,7 @@ ledger capable of storing auction transactions. Code written in Rust.
 ```
 cd distributed_ledger
 ```
-3.To build and run the assignement, use the cargo run command;
+3. To build and run the assignement, use the cargo run command;
 ```
 cargo run
 ```
