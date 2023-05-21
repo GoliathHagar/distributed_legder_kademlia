@@ -79,7 +79,7 @@ impl BlockchainHandler {
                                     found.push(new);
                                 }
                             }
-                            for
+
                             if !blk.clone().add_block(block) {}
                         } else if self.clone().node_type == BlockchainNodeType::Miner {
                             if block.is_valid() {

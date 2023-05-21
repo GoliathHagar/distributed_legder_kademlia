@@ -61,28 +61,4 @@ fn main() {
        t2.join().expect("thead: dead");*/
 
 
-
-/*
-    // Create a new blockchain with the desired consensus algorithm
-    let mut blockchain = Blockchain::new(ConsensusAlgorithm::ProofOfWork);
-
-    // Add transactions to the blockchain
-    blockchain.add_transaction("sender1".to_string(), "recipient1".to_string(), 1.0);
-    blockchain.add_transaction("sender2".to_string(), "recipient2".to_string(), 2.0);
-
-    // Mine a new block
-    blockchain.mine_block("miner_address".to_string()).unwrap();
-
-    // Switch to a different consensus algorithm
-    blockchain.set_consensus_algorithm(ConsensusAlgorithm::DelegatedProofOfStake);
-
-    // Add more transactions and mine a new block using the new consensus algorithm
-    blockchain.add_transaction("sender3".to_string(), "recipient3".to_string(), 3.0);
-    blockchain.add_transaction("sender4".to_string(), "recipient4".to_string(), 4.0);
-    blockchain.mine_block("miner_address".to_string()).unwrap();
-
-    // Verify the validity of the blockchain
-    println!("Blockchain is valid: {}", blockchain.is_valid());
-*/
-
 }

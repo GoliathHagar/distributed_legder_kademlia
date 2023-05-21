@@ -1,14 +1,14 @@
-
 pub struct Bid {
-    bid_id: Vec<u8>,
-    user_node_id: Vec<u8>,
-    auction_id: Vec<u8>,
-    user_public_key: Vec<u8>,
-    encrypted_bid: Vec<u8>,
+    bid_id: String,
+    user_node_id: String,
+    auction_id: String,
+    user_public_key: String,
+    encrypted_bid: String,
 }
 
 impl Bid {
-    pub fn new(user_node_id: Vec<u8>, user_public_key: Vec<u8>, encrypted_bid: Vec<u8>, auction_id: Vec<u8>) -> Bid {
+    pub fn new(user_node_id: String, user_public_key: String, encrypted_bid: String, auction_id: String) -> Bid {
+
         let bid_id = Bid::calculate_hash(&user_node_id, &auction_id, &user_public_key, &encrypted_bid);
 
         Bid {
@@ -41,6 +41,8 @@ impl Bid {
     }
 
     pub fn initialize_bid_for(auction: &Auction, node_id: Vec<u8>, key_pair: &KeyPair, amount: f32) -> Bid {
+        let node_id = String::from_utf8_lossy(&node_id).to_string();
+
         let shared_secret = Standards::generate_shared_secret(&auction.auctioneer_public_key, &key_pair.private_key);
 
         let amount_bytes = amount.to_ne_bytes();
@@ -58,18 +60,18 @@ impl Bid {
         Bid::new(node_id, key_pair.public_key.clone(), cipher_text, auction.auction_id.clone())
     }
 
-    fn calculate_hash(user_node_id: &[u8], auction_id: &[u8], user_public_key: &[u8], encrypted_bid: &[u8]) -> Vec<u8> {
+    fn calculate_hash(user_node_id: &str, auction_id: &str, user_public_key: &str, encrypted_bid: &str) -> String {
         let mut hasher = Sha3::sha3_256();
 
-        hasher.input(user_node_id);
-        hasher.input(auction_id);
-        hasher.input(user_public_key);
-        hasher.input(encrypted_bid);
+        hasher.input(user_node_id.as_bytes());
+        hasher.input(auction_id.as_bytes());
+        hasher.input(user_public_key.as_bytes());
+        hasher.input(encrypted_bid.as_bytes());
 
         let mut hash = vec![0u8; hasher.output_bytes()];
 
         hasher.result(&mut hash);
 
-        hash
+        hex::encode(hash)
     }
 }
