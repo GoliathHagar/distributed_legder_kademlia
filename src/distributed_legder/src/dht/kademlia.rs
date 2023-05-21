@@ -1,10 +1,10 @@
+use std::{str, thread};
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fs::create_dir_all;
 use std::io::Write;
 use std::ops::{Deref, Index};
 use std::sync::{Arc, mpsc, Mutex};
 use std::sync::mpsc::{Receiver, Sender};
-use std::thread;
 use std::thread::JoinHandle;
 
 use log::{debug, error, info};
@@ -27,8 +27,8 @@ pub struct KademliaDHT {
     pub service: Arc<RpcSocket>,
     pub node: Arc<Node>,
     pub bootstrap_node: Option<Node>,
-    subscription_sender: Arc<Mutex<Sender<Rpc>>>,
-    pub subscription_receiver: Arc<Mutex<Receiver<Rpc>>>
+    pub(self) subscription_sender: Arc<Mutex<Sender<Rpc>>>,
+    pub subscription_receiver: Arc<Mutex<Receiver<Rpc>>>,
 }
 
 impl KademliaDHT {
@@ -644,25 +644,17 @@ impl KademliaDHT {
                     "id": format!("{:?}", nd.id),
                 },
                 "routes": {
-                    /*"node": {
-                        "ip": routes.node.ip,
-                        "port": routes.node.port,
-                        "id": format!("{:?}", routes.node.id),
-                    },*/
-                    "kbuckets": parsed_buckets,
+                    "buckets": parsed_buckets,
                 },
                 "store": parsed_store,
                 "rpc": {
                     "socket": format!("{:?}", self.service.socket),
                     "awaiting_response": format!("{:?}", self.service.awaiting_response.lock().unwrap()),
-                    /*"node": {
-                        "ip": self.service.node.ip,
-                        "port": self.service.node.port,
-                        "id": format!("{:?}", self.service.node.id),
-                    },*/
-                }
+                },
+                "subscription_receiver": format!("{:?}", self.subscription_sender.lock().unwrap())
             }
         );
+
 
         let mut file = match std::fs::File::create(path) {
             Ok(f) => f,

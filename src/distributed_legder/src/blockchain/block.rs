@@ -1,18 +1,19 @@
-use serde::{Serialize, Deserialize};
+use std::fs::read;
+
+use serde::{Deserialize, Serialize};
+
 use crate::blockchain::transaction::Transaction;
 use crate::constants::fixed_sizes::{BLOCKCHAIN_MINING_DIFFICULTY, BLOCKCHAIN_VERSION};
 use crate::constants::utils::{calculate_block_hash, calculate_sha256, get_timestamp_now};
 
 /// Represents a block in the blockchain.
-
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct BlockHeader{
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+pub struct BlockHeader {
     // Index of the block in the blockchain.
     pub index: u64,
 
     /// Data stored in the block.
-    pub version : u8,
+    pub version: u8,
 
     // Time when the block was created.
     pub timestamp: u64,
@@ -30,7 +31,7 @@ pub struct BlockHeader{
     pub nonce: u128,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Block {
     pub header : BlockHeader,
 
@@ -126,4 +127,20 @@ impl Block {
 
     }
 
+}
+
+impl PartialEq<Self> for Block {
+    fn eq(&self, other: &Self) -> bool {
+        let mut eq = true;
+
+        if self.transactions.len() == other.transactions.len() {
+            for i in 0..self.transactions.len() {
+                eq = eq && (self.transactions[i] == other.transactions[i])
+            }
+
+            self.header == other.header && eq
+        } else {
+            return false;
+        }
+    }
 }

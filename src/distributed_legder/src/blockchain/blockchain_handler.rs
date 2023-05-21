@@ -1,15 +1,18 @@
 use std::sync::Arc;
 
-use log::info;
+use log::{debug, error, info};
 
+use crate::blockchain::block::Block;
 use crate::blockchain::blockchain::Blockchain;
 use crate::blockchain::consensus::ConsensusAlgorithm;
 use crate::constants::blockchain_node_type::BlockchainNodeType;
 use crate::constants::fixed_sizes::RESPONSE_TIMEOUT;
+use crate::constants::multicast_info_type::MulticastInfoType;
 use crate::dht::kademlia::KademliaDHT;
 use crate::network::node::Node;
+use crate::network::rpc::Rpc;
 
-struct BlockchainHandler {
+pub struct BlockchainHandler {
     pub(self) blockchain: Arc<Blockchain>,
     pub(self) kademlia: Arc<KademliaDHT>,
     pub(self) node_type: BlockchainNodeType,
@@ -18,7 +21,7 @@ struct BlockchainHandler {
 impl BlockchainHandler {
     pub fn new(consensus: ConsensusAlgorithm, node: Node, node_type: BlockchainNodeType, bootstrap: Option<Node>) -> BlockchainHandler {
         let kad = Arc::new(KademliaDHT::new(node, bootstrap.clone()));
-        let chain = Arc::new(Blockchain::new(consensus));
+        let chain = Arc::new(Blockchain::new(consensus, node_type.clone()));
 
         Self {
             blockchain: chain,
@@ -38,17 +41,35 @@ impl BlockchainHandler {
 
     fn handel_broadcast_blocks(self) {
         let kad = self.kademlia.clone();
-        let blk = self.blockchain.clone();
+        let mut blk = self.blockchain.clone();
 
         std::thread::spawn(move || loop {
             let payload = kad.clone().multicast_subscriber();
-            let block =
-                info!("Received payload {:?}", payload);
+            info!("Blockchain received payload {:?}", payload);
 
-            if self.node_type == BlockchainNodeType::Bootstrap && blk.is_valid() {}
+            match payload {
+                Rpc::Multicasting(id, payload_type, p) => {
+                    if payload_type == MulticastInfoType::Block {
+                        let mut block: Block = match serde_json::from_str(&p) {
+                            Ok(d) => d,
+                            Err(e) => {
+                                error!("Unable to decode block string payload: {}", e.to_string());
+                                debug!("Payload unknown [{}]", p.trim_end());
+                                continue;
+                            }
+                        };
 
 
-            //todo task on block chain
+                        if self.node_type == BlockchainNodeType::Bootstrap && blk.clone().is_valid() {
+                            blk.clone().add_block(block);
+                        }
+
+
+                        //todo task on block chain
+                    }
+                }
+                _ => { continue; }
+            };
         });
     }
 }
