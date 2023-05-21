@@ -8,63 +8,44 @@ use crate::blockchain::block::Block;
 use crate::blockchain::consensus::ConsensusAlgorithm;
 use crate::blockchain::miner::Miner;
 use crate::blockchain::transaction::Transaction;
-use crate::constants::blockchain_node_type::BlockchainNodeType;
 use crate::constants::fixed_sizes::ZEROS_HASH;
 use crate::constants::utils::calculate_block_hash;
 
 pub struct Blockchain {
     pub(self) blocks: Arc<Mutex<Vec<Block>>>,
     // valid by pow/pos blocks
-    pub(self) current_transactions: Arc<Mutex<Vec<Transaction>>>,
-    pub(self) miner: Arc<Miner>,
-    pub consensus_algorithm: ConsensusAlgorithm,
-    pub(self) node_type: BlockchainNodeType,
+    current_transactions: Arc<Mutex<Vec<Transaction>>>,
+    consensus_algorithm: ConsensusAlgorithm,
 }
 
 impl Blockchain {
-    pub fn new(consensus_algorithm: ConsensusAlgorithm, node_type: BlockchainNodeType) -> Self {
+    pub fn new(consensus_algorithm: ConsensusAlgorithm) -> Self {
         Self {
             blocks: Arc::new(Mutex::new(Vec::new())),
             current_transactions: Arc::new(Mutex::new(Vec::new())),
-            miner: Arc::new(Miner::new(consensus_algorithm)),
             consensus_algorithm,
-            node_type,
         }
     }
 
-    pub fn init(self) -> Option<Block> {
-        if self.node_type == BlockchainNodeType::Bootstrap {
-            let mut genesis_block = Block::new(
-                0,
-                "0".to_string(),
-                "0".to_string(),
-                Vec::new(),
-            );
-            genesis_block.header.timestamp = 0;
+    pub fn init(self) -> Block {
+        let mut genesis_block = Block::new(
+            0,
+            "0".to_string(),
+            "0".to_string(),
+            Vec::new(),
+        );
 
-            let hash = calculate_block_hash(&genesis_block);
-            genesis_block.header.hash = hash;
+        let hash = calculate_block_hash(&genesis_block);
+        genesis_block.header.hash = hash;
+        genesis_block.header.timestamp = 0;
 
-            let nonce = Miner::new(self.consensus_algorithm)
-                .mine_block(genesis_block.clone());
-            genesis_block.header.nonce = nonce;
+        let nonce = Miner {}.proof_of_work(genesis_block.clone());
+        genesis_block.header.nonce = nonce;
 
-            let mut blocks = match self.blocks.lock() {
-                Ok(sv) => sv,
-                Err(e) => {
-                    error!("Failed to acquire lock on blocks");
-                    panic!("{}", e.to_string());
-                }
-            };
-
-            blocks.push(genesis_block.clone());
-
-            return Some(genesis_block);
-        }
-        None
+        genesis_block
     }
 
-    pub fn create_block(self: Arc<Self>) {
+    pub fn create_block(&mut self) {
         let mut transactions = match self.current_transactions.lock() {
             Ok(sv) => sv,
             Err(_) => {
@@ -100,7 +81,7 @@ impl Blockchain {
         transactions.clear();
     }
 
-    pub fn add_block(self: Arc<Self>, block: Block) -> bool {
+    pub fn add_block(&mut self, block : Block) -> bool {
         let mut blocks = match self.blocks.lock() {
             Ok(sv) => sv,
             Err(_) => {
@@ -132,7 +113,7 @@ impl Blockchain {
         false
     }
 
-    pub fn block_count(self: Arc<Self>) -> usize {
+    pub fn block_count(&self) -> usize {
         let blocks = match self.blocks.lock() {
             Ok(sv) => sv,
             Err(e) => {
@@ -144,7 +125,7 @@ impl Blockchain {
         blocks.len()
     }
 
-    pub fn is_chain_valid(self: Arc<Self>) -> bool {
+    pub fn is_valid(&self) -> bool {
         let blocks = match self.blocks.lock() {
             Ok(sv) => sv,
             Err(e) => {
@@ -169,32 +150,85 @@ impl Blockchain {
         true
     }
 
-    /// Add a new transaction to the transaction pool
-    pub fn add_transaction(self, sender: String, recipient: String, amount: f64) {
-        let transaction = Transaction {
-            sender,
-            recipient,
-            amount,
+   /// Add a new transaction to the transaction pool
+    pub fn add_transaction(Self Arc<self>, sender: String, recipient: String, amount: f64) {
+
+       // Sign the transaction
+       transaction.sign();
+
+       // Add the transaction to the current_transactions list
+       let mut current_transactions = match self.current_transactions.lock() {
+           Ok(sv) => sv,
+           Err(_) => {
+               error!("Failed to acquire lock on transactions");
+               return;
+           }
+       };
+       current_transactions.push(transaction.clone());
+
+       // Add the transaction to the last block if it exists
+       let blocks = match self.blocks.lock() {
+           Ok(sv) => sv,
+           Err(_) => {
+               error!("Failed to acquire lock on blocks");
+               return;
+           }
+       };
+       if let Some(last_block) = blocks.last_mut() {
+           last_block.transactions.push(transaction);
+       }
+   }
+
+    fn valid_proof(self, last_proof: u128, proof: u128) -> bool {
+        let guess = format!("{}{}", last_proof, proof);
+        let mut hasher = Sha256::new();
+        hasher.update(guess.as_bytes());
+        let guess_hash = hasher.finalize();
+        guess_hash.starts_with(&[0, 0, 0, 0])
+    }
+
+  /*  /// Mine a new block
+    pub fn mine_block(&mut self, miner_address: String) -> Result<(), String> {
+        let last_block = self.blocks.last().clone().unwrap();
+        let proof = match self.consensus_algorithm {
+            ConsensusAlgorithm::ProofOfWork => self.proof_of_work(last_block.proof as u128)?,
+            ConsensusAlgorithm::DelegatedProofOfStake => self.delegated_proof_of_stake()?,
         };
-        self.current_transactions.push(transaction);
+        let previous_hash = calculate_hash(&last_block);
+
+        let new_block = Block {
+            index: last_block.index + 1,
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
+            nonce: 0,
+            transactions: self.current_transactions.clone(),
+            proof: proof.try_into().unwrap(),
+            previous_hash,
+            hash: String::new(),
+            payload: "".to_string(),
+        };
+
+        // Calculate the hash of the new block and update the block with it
+        let hash = calculate_hash(&new_block);
+        let new_block = Block { hash, ..new_block };
+
+        // Add the new block to the blockchain and clear the transaction pool
+        self.blocks.push(new_block);
+        self.current_transactions = vec![];
+
+        Ok(())
     }
-
-    // Mine a new block
-    pub fn mine_block(self: Arc<Self>, block: Block) -> Block {
-        let mut blk = block.clone();
-
-        let nonce = self.miner.mine_block(block);
-
-        blk.header.nonce = nonce;
-
-        blk.header.hash = calculate_block_hash(&blk);
-
-        blk
-    }
-
+*/
     fn delegated_proof_of_stake(&self) -> Result<u128, String> {
         // Logic for delegated proof of stake
 
         Ok(0)
     }
+
+    pub fn set_consensus_algorithm(&mut self, consensus_algorithm: ConsensusAlgorithm) {
+        self.consensus_algorithm = consensus_algorithm;
+    }
+
 }
