@@ -8,6 +8,7 @@ use crate::blockchain::block::Block;
 use crate::blockchain::consensus::ConsensusAlgorithm;
 use crate::blockchain::miner::Miner;
 use crate::blockchain::transaction::Transaction;
+use crate::constants::blockchain_node_type::BlockchainNodeType;
 use crate::constants::fixed_sizes::ZEROS_HASH;
 use crate::constants::utils::calculate_block_hash;
 
@@ -16,36 +17,49 @@ pub struct Blockchain {
     // valid by pow/pos blocks
     current_transactions: Arc<Mutex<Vec<Transaction>>>,
     consensus_algorithm: ConsensusAlgorithm,
+    pub(self) node_type: BlockchainNodeType,
 }
 
 impl Blockchain {
-    pub fn new(consensus_algorithm: ConsensusAlgorithm) -> Self {
+    pub fn new(consensus_algorithm: ConsensusAlgorithm, node_type: BlockchainNodeType) -> Self {
         Self {
             blocks: Arc::new(Mutex::new(Vec::new())),
             current_transactions: Arc::new(Mutex::new(Vec::new())),
             consensus_algorithm,
+            node_type,
         }
     }
 
-    pub fn init(self) -> Block {
-        let mut genesis_block = Block::new(
-            0,
-            "0".to_string(),
-            "0".to_string(),
-            Vec::new(),
-        );
+    pub fn init(self) {
+        if self.node_type == BlockchainNodeType::Bootstrap {
+            let mut genesis_block = Block::new(
+                0,
+                "0".to_string(),
+                "0".to_string(),
+                Vec::new(),
+            );
+            genesis_block.header.timestamp = 0;
 
-        let hash = calculate_block_hash(&genesis_block);
-        genesis_block.header.hash = hash;
-        genesis_block.header.timestamp = 0;
+            let hash = calculate_block_hash(&genesis_block);
+            genesis_block.header.hash = hash;
 
-        let nonce = Miner {}.proof_of_work(genesis_block.clone());
-        genesis_block.header.nonce = nonce;
+            let nonce = Miner::new(self.consensus_algorithm)
+                .mine_block(genesis_block.clone());
+            genesis_block.header.nonce = nonce;
 
-        genesis_block
+            let mut blocks = match self.blocks.lock() {
+                Ok(sv) => sv,
+                Err(e) => {
+                    error!("Failed to acquire lock on blocks");
+                    panic!("{}", e.to_string());
+                }
+            };
+
+            blocks.push(genesis_block)
+        }
     }
 
-    pub fn create_block(&mut self) {
+    pub fn create_block(self: Arc<Self>) {
         let mut transactions = match self.current_transactions.lock() {
             Ok(sv) => sv,
             Err(_) => {
@@ -81,7 +95,7 @@ impl Blockchain {
         transactions.clear();
     }
 
-    pub fn add_block(&mut self, block : Block) -> bool {
+    pub fn add_block(self: Arc<Self>, block: Block) -> bool {
         let mut blocks = match self.blocks.lock() {
             Ok(sv) => sv,
             Err(_) => {
@@ -113,7 +127,7 @@ impl Blockchain {
         false
     }
 
-    pub fn block_count(&self) -> usize {
+    pub fn block_count(self: Arc<Self>) -> usize {
         let blocks = match self.blocks.lock() {
             Ok(sv) => sv,
             Err(e) => {
@@ -125,7 +139,7 @@ impl Blockchain {
         blocks.len()
     }
 
-    pub fn is_valid(&self) -> bool {
+    pub fn is_valid(self: Arc<Self>) -> bool {
         let blocks = match self.blocks.lock() {
             Ok(sv) => sv,
             Err(e) => {
@@ -207,9 +221,4 @@ impl Blockchain {
 
         Ok(0)
     }
-
-    pub fn set_consensus_algorithm(&mut self, consensus_algorithm: ConsensusAlgorithm) {
-        self.consensus_algorithm = consensus_algorithm;
-    }
-
 }
