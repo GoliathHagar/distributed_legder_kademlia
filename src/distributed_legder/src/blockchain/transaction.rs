@@ -67,3 +67,14 @@ impl Transaction {
         hex::encode(signature.as_ref())
     }
 }
+
+impl PartialEq for Transaction {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id &&
+            self.sender == other.sender &&
+            self.recipient == other.recipient &&
+            self.signature == other.signature &&
+            self.public_key == other.public_key &&
+            self.amount - other.amount < 0.1e-2
+    }
+}

@@ -650,8 +650,9 @@ impl KademliaDHT {
                 "rpc": {
                     "socket": format!("{:?}", self.service.socket),
                     "awaiting_response": format!("{:?}", self.service.awaiting_response.lock().unwrap()),
+                    "subscription_receiver": format!("{:?}", self.subscription_sender.lock().unwrap())
                 },
-                "subscription_receiver": format!("{:?}", self.subscription_sender.lock().unwrap())
+
             }
         );
 

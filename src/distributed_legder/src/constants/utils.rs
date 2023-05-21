@@ -1,7 +1,10 @@
+use std::net::UdpSocket;
+
+use chrono::Utc;
+use log::error;
 use sha1::Sha1;
 use sha2::{Digest, Sha256};
-use std::net::UdpSocket;
-use chrono::Utc;
+
 use crate::blockchain::block::Block;
 
 pub fn get_timestamp_now() -> u64 {
@@ -32,6 +35,27 @@ pub fn calculate_sha1(value: &String) -> Vec<u8> {
 
     hasher.finalize().to_vec()
 }
+
+pub fn block_to_string(block: Block) -> String {
+    match serde_json::to_string(&block) {
+        Ok(d) => d,
+        Err(e) => {
+            error!("Unable to serialize message");
+            panic!("{}", e.to_string());
+        }
+    }
+}
+
+pub fn string_to_block(bl: String) -> Block {
+    match serde_json::from_str(&bl) {
+        Ok(d) => d,
+        Err(e) => {
+            error!("Unable to decode block string payload: {}", e.to_string());
+            panic!("{}", e.to_string());
+        }
+    }
+}
+
 
 pub fn get_local_ip() -> String {
     let socket = match UdpSocket::bind("0.0.0.0:0") {

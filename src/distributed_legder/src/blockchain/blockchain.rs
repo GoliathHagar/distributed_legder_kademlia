@@ -1,6 +1,8 @@
+use std::fs::create_dir_all;
+use std::io::Write;
 use std::sync::{Arc, Mutex};
 
-use log::error;
+use log::{error, info};
 use sha1::Digest;
 use sha2::Sha256;
 
@@ -8,44 +10,81 @@ use crate::blockchain::block::Block;
 use crate::blockchain::consensus::ConsensusAlgorithm;
 use crate::blockchain::miner::Miner;
 use crate::blockchain::transaction::Transaction;
-use crate::constants::fixed_sizes::ZEROS_HASH;
+use crate::constants::blockchain_node_type::BlockchainNodeType;
+use crate::constants::fixed_sizes::{DUMP_STATE_TIMEOUT, ZEROS_HASH};
 use crate::constants::utils::calculate_block_hash;
 
+#[derive(Clone, Debug)]
 pub struct Blockchain {
-    pub(self) blocks: Arc<Mutex<Vec<Block>>>,
     // valid by pow/pos blocks
-    current_transactions: Arc<Mutex<Vec<Transaction>>>,
-    consensus_algorithm: ConsensusAlgorithm,
+    pub(self) blocks: Arc<Mutex<Vec<Block>>>,
+    pub(self) current_transactions: Arc<Mutex<Vec<Transaction>>>,
+    pub(self) miner: Arc<Miner>,
+    pub consensus_algorithm: ConsensusAlgorithm,
+    pub(self) node_type: BlockchainNodeType,
 }
 
 impl Blockchain {
-    pub fn new(consensus_algorithm: ConsensusAlgorithm) -> Self {
+    pub fn new(consensus_algorithm: ConsensusAlgorithm, node_type: BlockchainNodeType) -> Self {
+        info!("Blockchain initiating with consensus {:?}", consensus_algorithm);
         Self {
             blocks: Arc::new(Mutex::new(Vec::new())),
             current_transactions: Arc::new(Mutex::new(Vec::new())),
+            miner: Arc::new(Miner::new(consensus_algorithm)),
             consensus_algorithm,
+            node_type,
         }
     }
 
-    pub fn init(self) -> Block {
-        let mut genesis_block = Block::new(
-            0,
-            "0".to_string(),
-            "0".to_string(),
-            Vec::new(),
-        );
+    pub fn init(self: Arc<Self>, path: &str) -> Option<Block> {
+        let mut res = None;
+        if self.node_type == BlockchainNodeType::Bootstrap {
+            info!("Blockchain initiating instantiating genesis block",);
+            let mut genesis_block = Block::new(
+                0,
+                "0".to_string(),
+                "0".to_string(),
+                Vec::new(),
+            );
+            genesis_block.header.timestamp = 0;
 
-        let hash = calculate_block_hash(&genesis_block);
-        genesis_block.header.hash = hash;
-        genesis_block.header.timestamp = 0;
+            let hash = calculate_block_hash(&genesis_block);
+            genesis_block.header.hash = hash;
 
-        let nonce = Miner {}.proof_of_work(genesis_block.clone());
-        genesis_block.header.nonce = nonce;
+            let nonce = self.miner.clone().mine_block(genesis_block.clone());
+            genesis_block.header.nonce = nonce;
+            genesis_block.header.hash = calculate_block_hash(&genesis_block);
 
-        genesis_block
+            let mut blocks = match self.blocks.lock() {
+                Ok(sv) => sv,
+                Err(e) => {
+                    error!("Failed to acquire lock on blocks");
+                    panic!("{}", e.to_string());
+                }
+            };
+
+            blocks.push(genesis_block.clone());
+
+
+            info!("Blockchain started genesis block {:?}",genesis_block);
+
+            res = Some(genesis_block);
+        }
+        //dump state
+        let copy_self = self.clone();
+        let p_dir = (path.to_owned() + ".blockchain.json").to_string();
+
+        info!("Blockchain dump state started");
+        std::thread::spawn(move || loop {
+            copy_self.dump_state(p_dir.as_str());
+            std::thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
+        });
+
+
+        res
     }
 
-    pub fn create_block(&mut self) {
+    pub fn create_block(self: Arc<Self>) {
         let mut transactions = match self.current_transactions.lock() {
             Ok(sv) => sv,
             Err(_) => {
@@ -81,7 +120,7 @@ impl Blockchain {
         transactions.clear();
     }
 
-    pub fn add_block(&mut self, block : Block) -> bool {
+    pub fn add_block(self: Arc<Self>, block: Block) -> bool {
         let mut blocks = match self.blocks.lock() {
             Ok(sv) => sv,
             Err(_) => {
@@ -90,8 +129,7 @@ impl Blockchain {
             }
         };
 
-        if blocks.is_empty()
-            && block.header.previous_hash.eq(ZEROS_HASH) && block.is_valid() {
+        if blocks.is_empty() && block.is_valid() {
             blocks.push(block);
 
             return true;
@@ -103,17 +141,13 @@ impl Blockchain {
 
                 return true;
             }
-            else {
-                //
-                //todo: ask the network the previous(kademlia);
-            }
 
         }
 
         false
     }
 
-    pub fn block_count(&self) -> usize {
+    pub fn block_count(self: Arc<Self>) -> usize {
         let blocks = match self.blocks.lock() {
             Ok(sv) => sv,
             Err(e) => {
@@ -125,7 +159,7 @@ impl Blockchain {
         blocks.len()
     }
 
-    pub fn is_valid(&self) -> bool {
+    pub fn is_chain_valid(self: Arc<Self>) -> bool {
         let blocks = match self.blocks.lock() {
             Ok(sv) => sv,
             Err(e) => {
@@ -150,66 +184,132 @@ impl Blockchain {
         true
     }
 
-   /* /// Add a new transaction to the transaction pool
-    pub fn add_transaction(&mut self, sender: String, recipient: String, amount: f64) {
-        let transaction = Transaction {
-            sender,
-            recipient,
-            amount,
+    /// Add a new transaction to the transaction pool
+    pub fn add_transaction(self: Arc<Self>, transaction: Transaction) {
+        // Add the transaction to the current_transactions list
+        let mut current_transactions = match self.current_transactions.lock() {
+            Ok(sv) => sv,
+            Err(_) => {
+                error!("Failed to acquire lock on transactions");
+                return;
+            }
         };
-        self.current_transactions.push(transaction);
-    }*/
 
-    fn valid_proof(self, last_proof: u128, proof: u128) -> bool {
-        let guess = format!("{}{}", last_proof, proof);
-        let mut hasher = Sha256::new();
-        hasher.update(guess.as_bytes());
-        let guess_hash = hasher.finalize();
-        guess_hash.starts_with(&[0, 0, 0, 0])
+        // Sign the transaction
+        let mut tst = transaction.clone();
+        tst.sign();
+
+        current_transactions.push(tst.clone());
+
     }
 
-  /*  /// Mine a new block
-    pub fn mine_block(&mut self, miner_address: String) -> Result<(), String> {
-        let last_block = self.blocks.last().clone().unwrap();
-        let proof = match self.consensus_algorithm {
-            ConsensusAlgorithm::ProofOfWork => self.proof_of_work(last_block.proof as u128)?,
-            ConsensusAlgorithm::DelegatedProofOfStake => self.delegated_proof_of_stake()?,
-        };
-        let previous_hash = calculate_hash(&last_block);
+    // Mine a new block
+    pub fn mine_block(self: Arc<Self>, block: Block) -> Block {
+        let mut blk = block.clone();
 
-        let new_block = Block {
-            index: last_block.index + 1,
-            timestamp: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-            nonce: 0,
-            transactions: self.current_transactions.clone(),
-            proof: proof.try_into().unwrap(),
-            previous_hash,
-            hash: String::new(),
-            payload: "".to_string(),
-        };
+        let nonce = self.miner.clone().mine_block(block);
 
-        // Calculate the hash of the new block and update the block with it
-        let hash = calculate_hash(&new_block);
-        let new_block = Block { hash, ..new_block };
+        blk.header.nonce = nonce;
 
-        // Add the new block to the blockchain and clear the transaction pool
-        self.blocks.push(new_block);
-        self.current_transactions = vec![];
+        blk.header.hash = calculate_block_hash(&blk);
 
-        Ok(())
+        blk
     }
-*/
-    fn delegated_proof_of_stake(&self) -> Result<u128, String> {
+
+    fn delegated_proof_of_stake(self: Arc<Self>) -> Result<u128, String> {
         // Logic for delegated proof of stake
 
         Ok(0)
     }
 
-    pub fn set_consensus_algorithm(&mut self, consensus_algorithm: ConsensusAlgorithm) {
-        self.consensus_algorithm = consensus_algorithm;
+    pub fn notify_miner(self: Arc<Self>, hash: String) {
+        self.miner.clone().set_mined_hash(hash);
     }
 
+    fn dump_state(&self, path: &str) {
+        if let Err(_) = create_dir_all("state_dumps") {
+            error!("Unable to create state dumps diretory");
+            return;
+        }
+
+        let mut transactions = match self.current_transactions.lock() {
+            Ok(sv) => sv,
+            Err(_) => {
+                error!("Failed to acquire lock on transactions");
+                return;
+            }
+        };
+
+        let blocks = match self.blocks.lock() {
+            Ok(sv) => sv,
+            Err(_) => {
+                error!("Failed to acquire lock on blocks");
+                return;
+            }
+        };
+
+        let mut parsed_blocks = Vec::new();
+
+        let flattened: Vec<Block> = blocks.clone();
+        let t: Vec<Transaction> = transactions.clone();
+
+        for kb in flattened {
+            let bucket = serde_json::json!(
+                {
+                    "block": {
+                        "header": kb.header,
+                        "transactions": kb.transactions,
+                    }
+                }
+            );
+
+            parsed_blocks.push(bucket);
+        }
+
+        let json = serde_json::json!(
+            {
+                "blockchain": {
+                    "blocks":parsed_blocks ,
+                    "pendent_translations": t
+                },
+                "consensus_algorithm": self.consensus_algorithm
+            }
+        );
+
+
+        let mut file = match std::fs::File::create(path) {
+            Ok(f) => f,
+            Err(_) => {
+                error!("Unable to create dump file");
+                return;
+            }
+        };
+
+        if let Err(_) = file.write_all(&json.to_string().as_bytes()) {
+            error!("Unable to create dump file Json");
+        }
+
+        let mut diagram = match std::fs::File::create(format!("{}.plantuml", path)) {
+            Ok(d) => d,
+            Err(_) => {
+                error!("Unable to create dump file Diagram");
+                return;
+            }
+        };
+
+        if let Err(_) = diagram.write_all("@startjson\n".to_string().as_bytes()) {
+            error!("Unable to write to dump file");
+            return;
+        }
+
+        if let Err(_) = diagram.write_all(&json.to_string().as_bytes()) {
+            error!("Unable to write to dump file");
+            return;
+        }
+
+        if let Err(_) = diagram.write_all("\n@endjson".to_string().as_bytes()) {
+            error!("Unable to write to dump file");
+            return;
+        }
+    }
 }
