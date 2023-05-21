@@ -5,6 +5,7 @@ use log::{debug, info};
 
 use distributed_legder::blockchain::blockchain_handler::BlockchainHandler;
 use distributed_legder::blockchain::consensus::ConsensusAlgorithm;
+use distributed_legder::constants::blockchain_node_type::BlockchainNodeType;
 use distributed_legder::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
 use distributed_legder::constants::utils::get_local_ip;
 use distributed_legder::dht::kademlia::KademliaDHT;
@@ -16,10 +17,17 @@ use distributed_legder::network::rpc::Rpc;
 fn main() {
     env_logger::init();
 
-    let current_node = Node::new(get_local_ip(), 1432);
+    let node = Node::new(get_local_ip(), 1432);
 
-    let blockchain = BlockchainHandler::new(ConsensusAlgorithm::ProofOfWork)
+    let blockchain = BlockchainHandler::new(
+        ConsensusAlgorithm::ProofOfWork,
+        node,
+        BlockchainNodeType::Bootstrap,
+        None,
+    );
 
+    let tb = blockchain.start("state_dumps/self.json");
+    tb.join().expect("TODO: panic message");
     /*   let new_node = Node::new(get_local_ip(), 1422);
 
        let kad = Arc::new(KademliaDHT::new(current_node.clone(), None));

@@ -15,8 +15,9 @@ use crate::constants::utils::calculate_block_hash;
 pub struct Blockchain {
     pub(self) blocks: Arc<Mutex<Vec<Block>>>,
     // valid by pow/pos blocks
-    current_transactions: Arc<Mutex<Vec<Transaction>>>,
-    consensus_algorithm: ConsensusAlgorithm,
+    pub(self) current_transactions: Arc<Mutex<Vec<Transaction>>>,
+    pub(self) miner: Arc<Miner>,
+    pub consensus_algorithm: ConsensusAlgorithm,
     pub(self) node_type: BlockchainNodeType,
 }
 
@@ -25,12 +26,13 @@ impl Blockchain {
         Self {
             blocks: Arc::new(Mutex::new(Vec::new())),
             current_transactions: Arc::new(Mutex::new(Vec::new())),
+            miner: Arc::new(Miner::new(consensus_algorithm)),
             consensus_algorithm,
             node_type,
         }
     }
 
-    pub fn init(self) {
+    pub fn init(self) -> Option<Block> {
         if self.node_type == BlockchainNodeType::Bootstrap {
             let mut genesis_block = Block::new(
                 0,
@@ -55,8 +57,11 @@ impl Blockchain {
                 }
             };
 
-            blocks.push(genesis_block)
+            blocks.push(genesis_block.clone());
+
+            return Some(genesis_block);
         }
+        None
     }
 
     pub fn create_block(self: Arc<Self>) {
@@ -139,7 +144,7 @@ impl Blockchain {
         blocks.len()
     }
 
-    pub fn is_valid(self: Arc<Self>) -> bool {
+    pub fn is_chain_valid(self: Arc<Self>) -> bool {
         let blocks = match self.blocks.lock() {
             Ok(sv) => sv,
             Err(e) => {
@@ -164,58 +169,29 @@ impl Blockchain {
         true
     }
 
-   /* /// Add a new transaction to the transaction pool
-    pub fn add_transaction(&mut self, sender: String, recipient: String, amount: f64) {
+    /// Add a new transaction to the transaction pool
+    pub fn add_transaction(self, sender: String, recipient: String, amount: f64) {
         let transaction = Transaction {
             sender,
             recipient,
             amount,
         };
         self.current_transactions.push(transaction);
-    }*/
-
-    fn valid_proof(self, last_proof: u128, proof: u128) -> bool {
-        let guess = format!("{}{}", last_proof, proof);
-        let mut hasher = Sha256::new();
-        hasher.update(guess.as_bytes());
-        let guess_hash = hasher.finalize();
-        guess_hash.starts_with(&[0, 0, 0, 0])
     }
 
-  /*  /// Mine a new block
-    pub fn mine_block(&mut self, miner_address: String) -> Result<(), String> {
-        let last_block = self.blocks.last().clone().unwrap();
-        let proof = match self.consensus_algorithm {
-            ConsensusAlgorithm::ProofOfWork => self.proof_of_work(last_block.proof as u128)?,
-            ConsensusAlgorithm::DelegatedProofOfStake => self.delegated_proof_of_stake()?,
-        };
-        let previous_hash = calculate_hash(&last_block);
+    // Mine a new block
+    pub fn mine_block(self: Arc<Self>, block: Block) -> Block {
+        let mut blk = block.clone();
 
-        let new_block = Block {
-            index: last_block.index + 1,
-            timestamp: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis() as u64,
-            nonce: 0,
-            transactions: self.current_transactions.clone(),
-            proof: proof.try_into().unwrap(),
-            previous_hash,
-            hash: String::new(),
-            payload: "".to_string(),
-        };
+        let nonce = self.miner.mine_block(block);
 
-        // Calculate the hash of the new block and update the block with it
-        let hash = calculate_hash(&new_block);
-        let new_block = Block { hash, ..new_block };
+        blk.header.nonce = nonce;
 
-        // Add the new block to the blockchain and clear the transaction pool
-        self.blocks.push(new_block);
-        self.current_transactions = vec![];
+        blk.header.hash = calculate_block_hash(&blk);
 
-        Ok(())
+        blk
     }
-*/
+
     fn delegated_proof_of_stake(&self) -> Result<u128, String> {
         // Logic for delegated proof of stake
 

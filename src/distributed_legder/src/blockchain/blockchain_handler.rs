@@ -1,13 +1,17 @@
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::ops::Index;
+use std::sync::{Arc, Mutex};
 
 use log::{debug, error, info};
 
 use crate::blockchain::block::Block;
 use crate::blockchain::blockchain::Blockchain;
 use crate::blockchain::consensus::ConsensusAlgorithm;
+use crate::blockchain::miner::Miner;
 use crate::constants::blockchain_node_type::BlockchainNodeType;
 use crate::constants::fixed_sizes::RESPONSE_TIMEOUT;
 use crate::constants::multicast_info_type::MulticastInfoType;
+use crate::constants::utils::block_to_string;
 use crate::dht::kademlia::KademliaDHT;
 use crate::network::node::Node;
 use crate::network::rpc::Rpc;
@@ -22,7 +26,6 @@ impl BlockchainHandler {
     pub fn new(consensus: ConsensusAlgorithm, node: Node, node_type: BlockchainNodeType, bootstrap: Option<Node>) -> BlockchainHandler {
         let kad = Arc::new(KademliaDHT::new(node, bootstrap.clone()));
         let chain = Arc::new(Blockchain::new(consensus, node_type.clone()));
-
         Self {
             blockchain: chain,
             kademlia: kad,
@@ -32,7 +35,12 @@ impl BlockchainHandler {
 
     pub fn start(self, dump_path: &str) -> std::thread::JoinHandle<()> {
         let network_thread = self.kademlia.clone().init(Some(dump_path.to_string()));
-        std::thread::sleep(std::time::Duration::from_millis(RESPONSE_TIMEOUT));
+        let block = self.blockchain.clone().init();
+
+        if let Some(b) = block {
+            let data = block_to_string(b);
+            self.kademlia.clone().broadcast_info((b.header.hash, MulticastInfoType::Miscellaneous, data))
+        }
 
         self.handel_broadcast_blocks();
 
@@ -59,9 +67,14 @@ impl BlockchainHandler {
                             }
                         };
 
-
-                        if self.node_type == BlockchainNodeType::Bootstrap && blk.clone().is_valid() {
+                        if self.node_type == BlockchainNodeType::Bootstrap && blk.clone().is_chain_valid() {
                             blk.clone().add_block(block);
+                        } else if self.node_type == BlockchainNodeType::Miner {
+                            if block.is_valid() {
+                                mining.index(&block.header.hash).;
+                            } else {
+                                let bch = self.blockchain.clone();
+                            }
                         }
 
 
@@ -71,5 +84,19 @@ impl BlockchainHandler {
                 _ => { continue; }
             };
         });
+    }
+
+    fn worker_nine(self, block: Block) {
+        let bch = self.blockchain.clone();
+        let kad = self.kademlia.clone();
+        let mine = std::thread::spawn(
+            move || {
+                let blk = bch.mine_block(block);
+
+                bch.add_block(blk);
+
+                kad.broadcast_info(block.header.hash, MulticastInfoType::Block)
+            }
+        );
     }
 }
