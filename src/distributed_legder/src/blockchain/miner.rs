@@ -7,9 +7,11 @@ use log::{debug, error};
 use crate::blockchain::block::Block;
 use crate::blockchain::consensus::ConsensusAlgorithm;
 
+#[derive(Clone, Debug)]
 pub struct Miner {
+    pub(self) mining_blocks: Arc<Mutex<HashMap<String, bool>>>,
+    //im mining block id and there is no results (from network)
     consensus: ConsensusAlgorithm,
-    pub(self) mining_blocks: Arc<Mutex<HashMap<String, bool>>>, //im mining block id and there is no results (from network)
 }
 
 impl Miner {
@@ -22,7 +24,7 @@ impl Miner {
         }
     }
 
-    pub fn set_mined_hash(self, hash: String) {
+    pub fn set_mined_hash(self: Arc<Self>, hash: String) {
         let mut mining = match self.mining_blocks.lock() {
             Ok(m) => m,
             Err(e) => {
@@ -34,7 +36,7 @@ impl Miner {
         mining.insert(hash, true);
     }
 
-    pub fn mine_block(self, block: Block) -> u128 {
+    pub fn mine_block(self: Arc<Self>, block: Block) -> u128 {
         let mut mining = match self.mining_blocks.lock() {
             Ok(m) => m,
             Err(e) => {
@@ -57,10 +59,10 @@ impl Miner {
         }
     }
 
-    fn proof_of_work(self, block: Block) -> u128 {
+    fn proof_of_work(self: Arc<Self>, block: Block) -> u128 {
         let mut nonce = block.header.nonce.clone();
 
-        while !self.valid_proof(block.clone(), nonce) {
+        while !self.clone().valid_proof(block.clone(), nonce) {
             nonce += 1;
 
             if nonce % 1000 == 0 {
@@ -84,14 +86,14 @@ impl Miner {
         nonce
     }
 
-    fn proof_of_stake(self, block: Block) -> u128 {
+    fn proof_of_stake(self: Arc<Self>, block: Block) -> u128 {
         let mut nonce = block.header.nonce.clone();
 
         nonce
     }
 
 
-    fn valid_proof(&self, block: Block, nonce: u128) -> bool {
+    fn valid_proof(self: Arc<Self>, block: Block, nonce: u128) -> bool {
         let mut mining_block = block.clone();
 
         mining_block.header.nonce = nonce;

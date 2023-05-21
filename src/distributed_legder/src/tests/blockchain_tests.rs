@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::blockchain::block::Block;
 use crate::blockchain::consensus::ConsensusAlgorithm;
 use crate::blockchain::miner::Miner;
@@ -22,7 +24,7 @@ fn test_mining_pow_block_and_validate() {
 
     block.header.timestamp=0;
 
-    let miner = Miner::new(ConsensusAlgorithm::ProofOfWork);
+    let miner = Arc::new(Miner::new(ConsensusAlgorithm::ProofOfWork));
 
     let nonce = miner.mine_block(block.clone());
     // Calculate the block's hash and convert it to a hexadecimal string

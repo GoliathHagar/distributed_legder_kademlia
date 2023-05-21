@@ -1,0 +1,1 @@
+{"blockchain":{"blocks":[{"block":{"header":{"hash":"00003dca675c73c6ac10ee45c57bdf80e3137bef8d8373a4e63a613d4fde03f2","index":0,"merkle_root":"","nonce":10220,"previous_hash":"0","timestamp":0,"version":1},"transactions":[]}}],"pendent_translations":[]},"consensus_algorithm":"ProofOfWork"}

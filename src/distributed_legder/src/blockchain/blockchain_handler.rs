@@ -16,6 +16,7 @@ use crate::dht::kademlia::KademliaDHT;
 use crate::network::node::Node;
 use crate::network::rpc::Rpc;
 
+#[derive(Clone, Debug)]
 pub struct BlockchainHandler {
     pub(self) blockchain: Arc<Blockchain>,
     pub(self) kademlia: Arc<KademliaDHT>,
@@ -35,7 +36,7 @@ impl BlockchainHandler {
 
     pub fn start(self, dump_path: &str) -> std::thread::JoinHandle<()> {
         let network_thread = self.kademlia.clone().init(Some(dump_path.to_string()));
-        let block = self.blockchain.clone().init();
+        let block = self.blockchain.clone().init(dump_path);
 
         if let Some(b) = block {
             let data = block_to_string(b.clone());
@@ -50,6 +51,8 @@ impl BlockchainHandler {
     fn handel_broadcast_blocks(self) {
         let kad = self.kademlia.clone();
         let mut blk = self.blockchain.clone();
+
+        info!("Blockchain started awaiting blocks ...");
 
         std::thread::spawn(move || loop {
             let payload = kad.clone().multicast_subscriber();
@@ -67,14 +70,13 @@ impl BlockchainHandler {
                             }
                         };
 
-                        if self.node_type == BlockchainNodeType::Bootstrap && blk.clone().is_chain_valid() {
-                            blk.clone().add_block(block);
-                        } else if self.node_type == BlockchainNodeType::Miner {
-
+                        if self.clone().node_type == BlockchainNodeType::Bootstrap && blk.clone().is_chain_valid() {
+                            if !blk.clone().add_block(block) {}
+                        } else if self.clone().node_type == BlockchainNodeType::Miner {
                             if block.is_valid() {
-                                blk.notify_miner(id)
+                                blk.clone().notify_miner(id)
                             } else {
-                                self.worker_nine(block);
+                                self.clone().worker_nine(block);
                             }
                         }
 
@@ -90,7 +92,7 @@ impl BlockchainHandler {
         let kad = self.kademlia.clone();
         let mine = std::thread::spawn(
             move || {
-                let blk = bch.mine_block(block.clone());
+                let blk = bch.clone().mine_block(block.clone());
 
                 bch.add_block(blk.clone());
 

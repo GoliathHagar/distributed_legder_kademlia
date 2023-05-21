@@ -1,6 +1,8 @@
+use std::fs::create_dir_all;
+use std::io::Write;
 use std::sync::{Arc, Mutex};
 
-use log::error;
+use log::{error, info};
 use sha1::Digest;
 use sha2::Sha256;
 
@@ -9,12 +11,13 @@ use crate::blockchain::consensus::ConsensusAlgorithm;
 use crate::blockchain::miner::Miner;
 use crate::blockchain::transaction::Transaction;
 use crate::constants::blockchain_node_type::BlockchainNodeType;
-use crate::constants::fixed_sizes::ZEROS_HASH;
+use crate::constants::fixed_sizes::{DUMP_STATE_TIMEOUT, ZEROS_HASH};
 use crate::constants::utils::calculate_block_hash;
 
+#[derive(Clone, Debug)]
 pub struct Blockchain {
-    pub(self) blocks: Arc<Mutex<Vec<Block>>>,
     // valid by pow/pos blocks
+    pub(self) blocks: Arc<Mutex<Vec<Block>>>,
     pub(self) current_transactions: Arc<Mutex<Vec<Transaction>>>,
     pub(self) miner: Arc<Miner>,
     pub consensus_algorithm: ConsensusAlgorithm,
@@ -23,6 +26,7 @@ pub struct Blockchain {
 
 impl Blockchain {
     pub fn new(consensus_algorithm: ConsensusAlgorithm, node_type: BlockchainNodeType) -> Self {
+        info!("Blockchain initiating with consensus {:?}", consensus_algorithm);
         Self {
             blocks: Arc::new(Mutex::new(Vec::new())),
             current_transactions: Arc::new(Mutex::new(Vec::new())),
@@ -32,8 +36,10 @@ impl Blockchain {
         }
     }
 
-    pub fn init(self) -> Option<Block> {
+    pub fn init(self: Arc<Self>, path: &str) -> Option<Block> {
+        let mut res = None;
         if self.node_type == BlockchainNodeType::Bootstrap {
+            info!("Blockchain initiating instantiating genesis block",);
             let mut genesis_block = Block::new(
                 0,
                 "0".to_string(),
@@ -45,8 +51,9 @@ impl Blockchain {
             let hash = calculate_block_hash(&genesis_block);
             genesis_block.header.hash = hash;
 
-            let nonce = self.miner.mine_block(genesis_block.clone());
+            let nonce = self.miner.clone().mine_block(genesis_block.clone());
             genesis_block.header.nonce = nonce;
+            genesis_block.header.hash = calculate_block_hash(&genesis_block);
 
             let mut blocks = match self.blocks.lock() {
                 Ok(sv) => sv,
@@ -58,9 +65,23 @@ impl Blockchain {
 
             blocks.push(genesis_block.clone());
 
-            return Some(genesis_block);
+
+            info!("Blockchain started genesis block {:?}",genesis_block);
+
+            res = Some(genesis_block);
         }
-        None
+        //dump state
+        let copy_self = self.clone();
+        let p_dir = (path.to_owned() + ".blockchain.json").to_string();
+
+        info!("Blockchain dump state started");
+        std::thread::spawn(move || loop {
+            copy_self.dump_state(p_dir.as_str());
+            std::thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
+        });
+
+
+        res
     }
 
     pub fn create_block(self: Arc<Self>) {
@@ -120,10 +141,6 @@ impl Blockchain {
                 blocks.push(block);
 
                 return true;
-            }
-            else {
-                //
-                //todo: ask the network the previous(kademlia);
             }
 
         }
@@ -185,25 +202,13 @@ impl Blockchain {
 
         current_transactions.push(tst.clone());
 
-        // Add the transaction to the last block if it exists
-        //TOdo: transacitons limites reached create blocl
-        /*let blocks = match self.blocks.lock() {
-            Ok(sv) => sv,
-            Err(_) => {
-                error!("Failed to acquire lock on blocks");
-                return;
-            }
-        };
-        if let Some(last_block) = blocks.last_mut() {
-            last_block.transactions.push(transaction);
-        }*/
     }
 
     // Mine a new block
     pub fn mine_block(self: Arc<Self>, block: Block) -> Block {
         let mut blk = block.clone();
 
-        let nonce = self.miner.mine_block(block);
+        let nonce = self.miner.clone().mine_block(block);
 
         blk.header.nonce = nonce;
 
@@ -219,6 +224,93 @@ impl Blockchain {
     }
 
     pub fn notify_miner(self: Arc<Self>, hash: String) {
-        self.miner.set_mined_hash(hash);
+        self.miner.clone().set_mined_hash(hash);
+    }
+
+    fn dump_state(&self, path: &str) {
+        if let Err(_) = create_dir_all("state_dumps") {
+            error!("Unable to create state dumps diretory");
+            return;
+        }
+
+        let mut transactions = match self.current_transactions.lock() {
+            Ok(sv) => sv,
+            Err(_) => {
+                error!("Failed to acquire lock on transactions");
+                return;
+            }
+        };
+
+        let blocks = match self.blocks.lock() {
+            Ok(sv) => sv,
+            Err(_) => {
+                error!("Failed to acquire lock on blocks");
+                return;
+            }
+        };
+
+        let mut parsed_blocks = Vec::new();
+
+        let flattened: Vec<Block> = blocks.clone();
+        let t: Vec<Transaction> = transactions.clone();
+
+        for kb in flattened {
+            let bucket = serde_json::json!(
+                {
+                    "block": {
+                        "header": kb.header,
+                        "transactions": kb.transactions,
+                    }
+                }
+            );
+
+            parsed_blocks.push(bucket);
+        }
+
+        let json = serde_json::json!(
+            {
+                "blockchain": {
+                    "blocks":parsed_blocks ,
+                    "pendent_translations": t
+                },
+                "consensus_algorithm": self.consensus_algorithm
+            }
+        );
+
+
+        let mut file = match std::fs::File::create(path) {
+            Ok(f) => f,
+            Err(_) => {
+                error!("Unable to create dump file");
+                return;
+            }
+        };
+
+        if let Err(_) = file.write_all(&json.to_string().as_bytes()) {
+            error!("Unable to create dump file Json");
+        }
+
+        let mut diagram = match std::fs::File::create(format!("{}.plantuml", path)) {
+            Ok(d) => d,
+            Err(_) => {
+                error!("Unable to create dump file Diagram");
+                return;
+            }
+        };
+
+        if let Err(_) = diagram.write_all("@startjson\n".to_string().as_bytes()) {
+            error!("Unable to write to dump file");
+            return;
+        }
+
+        if let Err(_) = diagram.write_all(&json.to_string().as_bytes()) {
+            error!("Unable to write to dump file");
+            return;
+        }
+
+        if let Err(_) = diagram.write_all("\n@endjson".to_string().as_bytes()) {
+            error!("Unable to write to dump file");
+            return;
+        }
     }
 }
