@@ -10,10 +10,9 @@ use log::{debug, error};
 use crate::auctions::auction::Auction;
 use crate::auctions::bid::Bid;
 use crate::blockchain::blockchain_handler::BlockchainHandler;
-use crate::blockchain::transaction::Transaction;
 use crate::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
 use crate::constants::multicast_info_type::MulticastInfoType;
-use crate::constants::utils::{block_to_string, get_timestamp_now, string_to_block, string_to_value, value_to_string};
+use crate::constants::utils::{block_to_string, get_timestamp_now, string_to_value, value_to_string};
 use crate::network::key::Key;
 use crate::network::node::Node;
 
@@ -40,7 +39,6 @@ impl AuctionUI {
         let chain_handler = bch.clone();
 
         let auctions_clone = auctions.clone();
-        let ch = chain_handler.clone();
 
         std::thread::spawn(move || loop {
             let obj = chain_handler.receiver_subscription.lock()
@@ -230,17 +228,11 @@ impl AuctionUI {
         let mut name = String::new();
         self.stdin.read_line(&mut name).unwrap();
 
-        print!("Open bid: ");
+        print!("Open / Minimum bid: ");
         io::stdout().flush().unwrap();
         let mut opening_bid = String::new();
         self.stdin.read_line(&mut opening_bid).unwrap();
         let opening_bid = opening_bid.trim().parse().unwrap_or(0.0);
-
-        print!("Minimum bid: ");
-        io::stdout().flush().unwrap();
-        let mut minimum_bid = String::new();
-        self.stdin.read_line(&mut minimum_bid).unwrap();
-        let minimum_bid = minimum_bid.trim().parse().unwrap_or(0);
 
         print!("Auction duration (in min): ");
         io::stdout().flush().unwrap();
@@ -274,7 +266,7 @@ impl AuctionUI {
         self.stdin.read_line(&mut choice).unwrap();
         let mut choice_parsed = choice.trim().parse().unwrap_or(0);
 
-        while choice_parsed < 0 || choice_parsed >= auctions.len() + 1 {
+        while choice_parsed >= auctions.len() + 1 {
             print!("Bad option, choose again: ");
             io::stdout().flush().unwrap();
             let mut choice = String::new();
@@ -320,7 +312,7 @@ impl AuctionUI {
             return;
         }
 
-        let mut map_auctions = match self.auctions.lock() {
+        let map_auctions = match self.auctions.lock() {
             Ok(aut) => aut,
             Err(e) => {
                 error!("Unable to acquire mutex on auctions");

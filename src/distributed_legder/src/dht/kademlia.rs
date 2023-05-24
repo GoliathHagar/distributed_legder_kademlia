@@ -411,6 +411,7 @@ impl KademliaDHT {
         (None, nodes)
     }
 
+    #[allow(dead_code)]
     fn ping(self: Arc<Self>, destination: Node) -> bool {
         let client = Client::new(self.service.clone());
 

@@ -1,13 +1,7 @@
-use std::io::{self, BufRead, Write};
-use std::time::{SystemTime, UNIX_EPOCH};
-
 use log::warn;
-use ring::signature::KeyPair;
 use serde::{Deserialize, Serialize};
 
 use crate::auctions::bid::Bid;
-use crate::blockchain::transaction::Transaction;
-use crate::constants::fixed_sizes::KEY_SIZE;
 use crate::constants::utils::{calculate_signature, get_timestamp_now};
 use crate::network::key::Key;
 use crate::network::node::Node;

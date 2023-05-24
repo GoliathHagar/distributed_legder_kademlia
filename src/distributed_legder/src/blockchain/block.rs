@@ -1,5 +1,3 @@
-use std::fs::read;
-
 use serde::{Deserialize, Serialize};
 
 use crate::blockchain::transaction::Transaction;

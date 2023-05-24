@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::blockchain::transaction::Transaction;
-use crate::constants::utils::{calculate_sha256, get_timestamp_now};
+use crate::constants::utils::get_timestamp_now;
 use crate::network::key::Key;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

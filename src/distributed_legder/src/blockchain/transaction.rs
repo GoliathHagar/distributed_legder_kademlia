@@ -1,5 +1,3 @@
-use ring::rand::SystemRandom;
-use ring::signature::{self};
 use serde::{Deserialize, Serialize};
 
 use crate::constants::utils::{calculate_sha256, calculate_signature};

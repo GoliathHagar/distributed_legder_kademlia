@@ -3,15 +3,13 @@ use std::io::Write;
 use std::sync::{Arc, Mutex};
 
 use log::{debug, error, info, warn};
-use sha1::Digest;
-use sha2::Sha256;
 
 use crate::blockchain::block::Block;
 use crate::blockchain::consensus::ConsensusAlgorithm;
 use crate::blockchain::miner::Miner;
 use crate::blockchain::transaction::Transaction;
 use crate::constants::blockchain_node_type::BlockchainNodeType;
-use crate::constants::fixed_sizes::{DUMP_STATE_TIMEOUT, ZEROS_HASH};
+use crate::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
 use crate::constants::utils::calculate_block_hash;
 
 #[derive(Clone, Debug)]
@@ -222,6 +220,7 @@ impl Blockchain {
         blk
     }
 
+    #[allow(dead_code)]
     fn delegated_proof_of_stake(self: Arc<Self>) -> Result<u128, String> {
         // Logic for delegated proof of stake
 
@@ -238,7 +237,7 @@ impl Blockchain {
             return;
         }
 
-        let mut transactions = match self.current_transactions.lock() {
+        let transactions = match self.current_transactions.lock() {
             Ok(sv) => sv,
             Err(_) => {
                 error!("Failed to acquire lock on transactions");

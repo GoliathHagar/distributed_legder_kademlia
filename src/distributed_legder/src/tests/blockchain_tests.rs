@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::auctions::auction::Auction;
-use crate::auctions::auction_ui::AuctionUI;
 use crate::auctions::bid::Bid;
 use crate::blockchain::block::Block;
 use crate::blockchain::blockchain_handler::BlockchainHandler;
@@ -57,9 +56,9 @@ fn test_mining_pow_block_and_validate() {
     assert_eq!(is_valid, true)
 }
 
-
+#[ignore]
 #[test]
-fn test_aution_and_bid_on_miners() {
+fn test_aution_and_bid_on_miner_depend_on_local_running_server() {
     let node = Node::new(get_local_ip(), 9876);
     let boot = Node::new(get_local_ip(), 1432);
 

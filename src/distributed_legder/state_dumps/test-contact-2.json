@@ -1,27 +1,27 @@
 {
   "nodes": {
-    "id": "8266E062C8232217DA9B4C7F4F32AF82214383FDF7E9E18FCF7FAF65F18DB47",
-    "ip": "192.168.1.198",
+    "id": "25E7389647F0E19CFE30E9E53FAE6ADDBB69394F64517206EFB334DD31C2E46",
+    "ip": "192.168.153.8",
     "port": 1431
   },
   "routes": {
     "buckets": [
       {
         "nodes": {
-          "id": "FCF45CB7DA1F31F08D37841120E5E520BEC05FFD301C8CDCB4EE8CE8B4BEE9",
-          "ip": "192.168.1.198",
-          "port": 1433,
+          "id": "F49884776883317B8CF1ECB0D957CB441BF4C69801BD97A8DC3C6F2DD5C3",
+          "ip": "192.168.153.8",
+          "port": 1543,
           "thrust": {
-            "successfully_interaction": 5,
-            "total_interaction": 5
+            "successfully_interaction": 4,
+            "total_interaction": 4
           }
         },
         "size": 32
       },
       {
         "nodes": {
-          "id": "9AF8DF7FE8E6D2D2251FEC140AA63F210E94477A8C0F88D33A73E624AED22D",
-          "ip": "192.168.1.198",
+          "id": "AB54C0E5271ED74BAC859730AC1B8B631E8F236E46B0CC701836CD9C18661",
+          "ip": "192.168.153.8",
           "port": 1430,
           "thrust": {
             "successfully_interaction": 5,
@@ -32,24 +32,24 @@
       },
       {
         "nodes": {
-          "id": "8DFB298C6B82ED69D3EFB667EC756E99F8031FC0321945BCBF6A6CD30E8",
-          "ip": "192.168.1.198",
-          "port": 1434,
+          "id": "A4F24D58986334E378BE607C18AED44119932FF9A4F374CA93588C38C3D3C9C6",
+          "ip": "192.168.153.8",
+          "port": 1433,
           "thrust": {
-            "successfully_interaction": 3,
-            "total_interaction": 3
+            "successfully_interaction": 5,
+            "total_interaction": 5
           }
         },
         "size": 32
       },
       {
         "nodes": {
-          "id": "84CBECF7318F24AB2660601975E8794C73614242077FA3C59F6CD21A7487037",
-          "ip": "192.168.1.198",
-          "port": 1543,
+          "id": "1CB49C64BA9346EC7C1E28671FDE78D646E2EA13BDCE24E7E450F273F64B85A4",
+          "ip": "192.168.153.8",
+          "port": 1434,
           "thrust": {
-            "successfully_interaction": 4,
-            "total_interaction": 4
+            "successfully_interaction": 3,
+            "total_interaction": 3
           }
         },
         "size": 32
@@ -58,15 +58,15 @@
   },
   "rpc": {
     "awaiting_response": "{}",
-    "socket": "UdpSocket { addr: 192.168.1.198:1431, fd: 14 }",
+    "socket": "UdpSocket { addr: 192.168.153.8:1431, fd: 14 }",
     "subscription_receiver": "Sender { .. }"
   },
   "store": [
     {
-      "key31": "val jkfssgdl"
+      "key11": "va gv"
     },
     {
-      "key11": "va gv"
+      "key31": "val jkfssgdl"
     }
   ]
 }

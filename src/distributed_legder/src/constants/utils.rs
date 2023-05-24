@@ -7,7 +7,6 @@ use ring::signature;
 use sha1::Sha1;
 use sha2::{Digest, Sha256};
 
-use crate::auctions::auction::Auction;
 use crate::blockchain::block::Block;
 
 pub fn get_timestamp_now() -> u64 {

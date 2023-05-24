@@ -1,19 +1,15 @@
-use std::collections::HashMap;
-use std::ops::Index;
 use std::sync::{Arc, mpsc, Mutex};
 use std::sync::mpsc::{Receiver, Sender};
 
-use log::{debug, error, info};
+use log::{error, info};
 
 use crate::blockchain::block::Block;
 use crate::blockchain::blockchain::Blockchain;
 use crate::blockchain::consensus::ConsensusAlgorithm;
-use crate::blockchain::miner::Miner;
 use crate::blockchain::transaction::Transaction;
 use crate::constants::blockchain_node_type::BlockchainNodeType;
-use crate::constants::fixed_sizes::RESPONSE_TIMEOUT;
 use crate::constants::multicast_info_type::MulticastInfoType;
-use crate::constants::utils::{block_to_string, calculate_block_hash, string_to_block};
+use crate::constants::utils::{block_to_string, string_to_block};
 use crate::dht::kademlia::KademliaDHT;
 use crate::network::node::Node;
 use crate::network::rpc::Rpc;
@@ -67,7 +63,7 @@ impl BlockchainHandler {
 
     fn handel_broadcast_blocks(self) {
         let kad = self.kademlia.clone();
-        let mut blockchain = self.blockchain.clone();
+        let blockchain = self.blockchain.clone();
 
         info!("Blockchain started awaiting blocks ...");
 
@@ -78,7 +74,7 @@ impl BlockchainHandler {
             match payload {
                 Rpc::Multicasting(id, payload_type, p) => {
                     if payload_type == MulticastInfoType::Block {
-                        let mut block: Block = string_to_block(p);
+                        let block: Block = string_to_block(p);
 
                         if self.clone().node_type == BlockchainNodeType::Bootstrap && blockchain.clone().is_chain_valid() {
                             info!("Blockchain received block {:?}", block.clone());
@@ -131,7 +127,7 @@ impl BlockchainHandler {
     fn worker_nine(self, block: Block) {
         let bch = self.blockchain.clone();
         let kad = self.kademlia.clone();
-        let mine = std::thread::spawn(
+        std::thread::spawn(
             move || {
                 let blk = bch.clone().mine_block(block.clone());
 

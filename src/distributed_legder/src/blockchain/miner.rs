@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ops::Index;
 use std::sync::{Arc, Mutex};
 
-use log::{debug, error};
+use log::error;
 
 use crate::blockchain::block::Block;
 use crate::blockchain::consensus::ConsensusAlgorithm;
@@ -66,7 +66,7 @@ impl Miner {
             nonce += 1;
 
             if nonce % 1000 == 0 {
-                let mut mining = match self.mining_blocks.lock() {
+                let mining = match self.mining_blocks.lock() {
                     Ok(m) => m,
                     Err(e) => {
                         error!("Unable to decode block string payload: {}", e.to_string());
@@ -87,7 +87,7 @@ impl Miner {
     }
 
     fn proof_of_stake(self: Arc<Self>, block: Block) -> u128 {
-        let mut nonce = block.header.nonce.clone();
+        let nonce = block.header.nonce.clone();
 
         nonce
     }
