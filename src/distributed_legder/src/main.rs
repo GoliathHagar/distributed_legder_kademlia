@@ -32,7 +32,7 @@ fn main() {
     let aution = Arc::new(AuctionUI::new(node));
 
     //aution.init(Arc::new(blockchain.clone()));
-    aution.start(Arc::new(blockchain));
+    aution.start(Arc::new(blockchain), "state_dumps/self.json");
 
 
     tb.join().expect("TODO: panic message");

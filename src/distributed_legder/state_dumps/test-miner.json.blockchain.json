@@ -1,0 +1,7 @@
+{
+  "blockchain": {
+    "blocks": [],
+    "pendent_translations": []
+  },
+  "consensus_algorithm": "ProofOfWork"
+}

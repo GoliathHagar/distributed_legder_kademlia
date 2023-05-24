@@ -228,7 +228,6 @@ impl KademliaDHT {
     }
 
     pub(self) fn handel_multicast(self: Arc<Self>, payload: Datagram) -> Option<Datagram> {
-        println!("broadcast {:?}", payload);
         info!("broadcast {:?}", payload);
         if let Ok(sub) = self.subscription_sender.lock(){
             if let Err(_d) = sub.send(payload.data){

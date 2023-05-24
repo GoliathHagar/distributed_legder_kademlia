@@ -1,0 +1,27 @@
+{
+  "auctions": [
+    {
+      "auction": {
+        "auction_duration": 2,
+        "auctioneer_node_id": "8615ca1dbab64ade33fba86e052436e4309d7c8c080a50185567e0e0afcc63c7",
+        "auctioneer_pk": "this a suppost key",
+        "bids": [
+          {
+            "amount": 54.0,
+            "auction_id": "7a99a8aec4241f989ddaa7be805696aa20a6f42ab9eeb1d7bc2228f8f68cc2ec",
+            "bid_id": "97c91ff4035fab6e575cca992305fbb24b4647b7cc5e62ad6c79a5b56334c5d9",
+            "bid_time": 1684923925171171910,
+            "user_node_id": "8615ca1dbab64ade33fba86e052436e4309d7c8c080a50185567e0e0afcc63c7",
+            "user_public_key": "This is a public key"
+          }
+        ],
+        "id": "7a99a8aec4241f989ddaa7be805696aa20a6f42ab9eeb1d7bc2228f8f68cc2ec",
+        "initial_ts": 1684923915170181362,
+        "minimum_bid": 5.0,
+        "name": "this is an test auction",
+        "signature": "709dd56e9a142a9fa4214cb57dfd4867fd9d0b9ed88b536ace82396198ec77a125b500408df8f20abd683f9ca1de8fef96fdc230faba3d7e282a9bab28240007"
+      }
+    }
+  ],
+  "current_timestamp": 1684923958346828698
+}

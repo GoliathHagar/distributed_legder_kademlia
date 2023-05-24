@@ -1,15 +1,17 @@
 use std::collections::HashMap;
+use std::fs::create_dir_all;
 use std::io;
 use std::io::Write;
 use std::ops::Index;
 use std::sync::{Arc, Mutex};
 
-use log::error;
+use log::{debug, error};
 
 use crate::auctions::auction::Auction;
 use crate::auctions::bid::Bid;
 use crate::blockchain::blockchain_handler::BlockchainHandler;
 use crate::blockchain::transaction::Transaction;
+use crate::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
 use crate::constants::multicast_info_type::MulticastInfoType;
 use crate::constants::utils::{block_to_string, get_timestamp_now, string_to_block, string_to_value, value_to_string};
 use crate::network::key::Key;
@@ -33,16 +35,18 @@ impl AuctionUI {
         }
     }
 
-    fn init(self, bch: Arc<BlockchainHandler>) {
+    fn init(self, bch: Arc<BlockchainHandler>, path: &str) {
         let auctions = self.auctions.clone();
         let chain_handler = bch.clone();
 
-        let auct = auctions.clone();
+        let auctions_clone = auctions.clone();
         let ch = chain_handler.clone();
 
         std::thread::spawn(move || loop {
             let obj = chain_handler.receiver_subscription.lock()
                 .unwrap().recv().unwrap();
+
+            debug!("Packet received {:?}",obj);
 
             match obj.0 {
                 MulticastInfoType::Auction => {
@@ -75,7 +79,7 @@ impl AuctionUI {
 
         std::thread::spawn(move || loop {
             std::thread::sleep(std::time::Duration::from_secs(2 * 60));
-            let auctions = match self.auctions.lock() {
+            let auctions = match auctions_clone.lock() {
                 Ok(aut) => aut,
                 Err(e) => {
                     error!("Unable to acquire mutex on auctions");
@@ -110,9 +114,15 @@ impl AuctionUI {
 
             drop(auctions);
         });
+
+        let new_path = path.to_owned() + ".auction.json";
+        std::thread::spawn(move || loop {
+            std::thread::sleep(std::time::Duration::from_millis(DUMP_STATE_TIMEOUT));
+            self.dump_state(new_path.as_str());
+        });
     }
 
-    pub fn start(&self, blockchain_handler: Arc<BlockchainHandler>) {
+    pub fn start(&self, blockchain_handler: Arc<BlockchainHandler>, path: &str) {
         let cloned_auction_ui = AuctionUI {
             stdin: io::stdin(),
             max_rows: self.max_rows,
@@ -120,7 +130,7 @@ impl AuctionUI {
             auctions: self.auctions.clone(),
         };
 
-        cloned_auction_ui.init(blockchain_handler.clone());
+        cloned_auction_ui.init(blockchain_handler.clone(), path);
 
         let mut option = self.main_menu();
 
@@ -302,5 +312,91 @@ impl AuctionUI {
             amount,
             chosen_auction.auction_id.clone(),
         )
+    }
+
+    fn dump_state(&self, path: &str) {
+        if let Err(_) = create_dir_all("state_dumps") {
+            error!("Unable to create state dumps diretory");
+            return;
+        }
+
+        let mut map_auctions = match self.auctions.lock() {
+            Ok(aut) => aut,
+            Err(e) => {
+                error!("Unable to acquire mutex on auctions");
+                panic!("{}", e.to_string())
+            }
+        };
+
+        let mut parsed_auctions = Vec::new();
+        let mut flatted_auctions = Vec::new();
+
+        for auction in map_auctions.values() {
+            flatted_auctions.push(auction.clone());
+        }
+
+        for kb in flatted_auctions {
+            let auction = serde_json::json!(
+                {
+                    "auction": {
+                        "id": kb.auction_id,
+                        "name":  kb.auction_name,
+                        "minimum_bid":  kb.minimum_bid,
+                        "initial_ts":  kb.initial_ts,
+                        "auctioneer_node_id":  kb.auctioneer_node_id,
+                        "auction_duration":  kb.auction_duration,
+                        "auctioneer_pk":  kb.auctioneer_pk,
+                        "signature":  kb.signature,
+                        "bids":  kb.bids,
+                    }
+                }
+            );
+
+            parsed_auctions.push(auction);
+        }
+
+
+        let json = serde_json::json!(
+            {
+                "auctions":parsed_auctions ,
+                "current_timestamp": get_timestamp_now()
+            }
+        );
+
+
+        let mut file = match std::fs::File::create(path) {
+            Ok(f) => f,
+            Err(_) => {
+                error!("Unable to create dump file");
+                return;
+            }
+        };
+
+        if let Err(_) = file.write_all(&json.to_string().as_bytes()) {
+            error!("Unable to create dump file Json");
+        }
+
+        let mut diagram = match std::fs::File::create(format!("{}.plantuml", path)) {
+            Ok(d) => d,
+            Err(_) => {
+                error!("Unable to create dump file Diagram");
+                return;
+            }
+        };
+
+        if let Err(_) = diagram.write_all("@startjson\n".to_string().as_bytes()) {
+            error!("Unable to write to dump file");
+            return;
+        }
+
+        if let Err(_) = diagram.write_all(&json.to_string().as_bytes()) {
+            error!("Unable to write to dump file");
+            return;
+        }
+
+        if let Err(_) = diagram.write_all("\n@endjson".to_string().as_bytes()) {
+            error!("Unable to write to dump file");
+            return;
+        }
     }
 }

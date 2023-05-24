@@ -15,14 +15,14 @@ use crate::network::node::Node;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Auction {
     pub auction_id: Key,
-    auctioneer_node_id: Key,
+    pub auctioneer_node_id: Key,
     pub auction_name: String,
     pub minimum_bid: f64,
     // in minutes
     pub initial_ts: u64,
-    auction_duration: usize,
-    auctioneer_pk: String,
-    signature: String,
+    pub auction_duration: usize,
+    pub auctioneer_pk: String,
+    pub signature: String,
 
     pub bids: Vec<Bid>,
 }

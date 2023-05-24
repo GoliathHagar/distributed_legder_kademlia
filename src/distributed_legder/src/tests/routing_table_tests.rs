@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use std::thread;
 
+use log::debug;
+
 use crate::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
 use crate::constants::utils::get_local_ip;
 use crate::dht::kademlia::KademliaDHT;
@@ -30,7 +32,7 @@ fn distance_to_self() {
 
     let index = rt.node_find_bucket_index(&node2.id);
 
-    println!(
+    debug!(
         "distance = {:?}, ,  index= {}",
         node.clone().id.distance(&node2.id),
         index
