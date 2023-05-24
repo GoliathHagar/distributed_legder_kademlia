@@ -44,7 +44,7 @@ impl Blockchain {
                 0,
                 "0".to_string(),
                 "0".to_string(),
-                Vec::new(),
+                Vec::from([Transaction::new("".to_string(), "".to_string(), 0.0)]),
             );
             genesis_block.header.timestamp = 0;
 
@@ -84,12 +84,12 @@ impl Blockchain {
         res
     }
 
-    pub fn create_block(self: Arc<Self>) {
+    pub fn create_block(self: Arc<Self>) -> Option<Block> {
         let mut transactions = match self.current_transactions.lock() {
             Ok(sv) => sv,
             Err(_) => {
                 error!("Failed to acquire lock on transactions");
-                return;
+                return None;
             }
         };
 
@@ -97,11 +97,11 @@ impl Blockchain {
             Ok(sv) => sv,
             Err(_) => {
                 error!("Failed to acquire lock on blocks");
-                return;
+                return None;
             }
         };
 
-        if transactions.is_empty() { return; }
+        if transactions.is_empty() { return None; }
 
         let previous_block = blocks.last().unwrap();
         let index = previous_block.header.index + 1;
@@ -118,6 +118,8 @@ impl Blockchain {
         let hash = calculate_block_hash(&block);
         block.header.hash = hash;
         transactions.clear();
+
+        Some(block)
     }
 
     pub fn add_block(self: Arc<Self>, block: Block) -> bool {

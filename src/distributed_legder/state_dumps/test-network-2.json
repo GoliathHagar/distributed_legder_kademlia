@@ -34,12 +34,12 @@
   },
   "rpc": {
     "awaiting_response": "{}",
-    "socket": "UdpSocket { addr: 192.168.1.198:8542, fd: 5 }",
+    "socket": "UdpSocket { addr: 192.168.1.198:8542, fd: 11 }",
     "subscription_receiver": "Sender { .. }"
   },
   "store": [
     {
-      "0000b8fe9529971b3383270b03ef6454e1b295b814cfe041711b43a939e153df": "{\"header\":{\"index\":1,\"version\":1,\"timestamp\":1684708517784425695,\"previous_hash\":\"00003dca675c73c6ac10ee45c57bdf80e3137bef8d8373a4e63a613d4fde03f2\",\"hash\":\"0000b8fe9529971b3383270b03ef6454e1b295b814cfe041711b43a939e153df\",\"merkle_root\":\"\",\"nonce\":124434},\"transactions\":[]}"
+      "000023250f707594534b42e378456c9958ba793c8ab220bd401de9ff7bdc5d42": "{\"header\":{\"index\":1,\"version\":1,\"timestamp\":1684860651367060940,\"previous_hash\":\"00003dca675c73c6ac10ee45c57bdf80e3137bef8d8373a4e63a613d4fde03f2\",\"hash\":\"000023250f707594534b42e378456c9958ba793c8ab220bd401de9ff7bdc5d42\",\"merkle_root\":\"\",\"nonce\":9742},\"transactions\":[]}"
     }
   ]
 }

@@ -4,29 +4,24 @@
       {
         "block": {
           "header": {
-            "hash": "00003dca675c73c6ac10ee45c57bdf80e3137bef8d8373a4e63a613d4fde03f2",
+            "hash": "0000343260d0fda774e64673fb0ce7b66eb3942bfdbcd9bc24019f48cb70ba48",
             "index": 0,
-            "merkle_root": "",
-            "nonce": 10220,
+            "merkle_root": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+            "nonce": 110214,
             "previous_hash": "0",
             "timestamp": 0,
             "version": 1
           },
-          "transactions": []
-        }
-      },
-      {
-        "block": {
-          "header": {
-            "hash": "000042d1fed8c3e04ce585f421494904c50a1003458e73a998a608f9a2990583",
-            "index": 1,
-            "merkle_root": "",
-            "nonce": 47620,
-            "previous_hash": "00003dca675c73c6ac10ee45c57bdf80e3137bef8d8373a4e63a613d4fde03f2",
-            "timestamp": 1684708360419115039,
-            "version": 1
-          },
-          "transactions": []
+          "transactions": [
+            {
+              "amount": 0.0,
+              "id": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+              "public_key": null,
+              "recipient": "",
+              "sender": "",
+              "signature": null
+            }
+          ]
         }
       }
     ],

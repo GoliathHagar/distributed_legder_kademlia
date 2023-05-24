@@ -7,6 +7,7 @@ use ring::signature;
 use sha1::Sha1;
 use sha2::{Digest, Sha256};
 
+use crate::auctions::auction::Auction;
 use crate::blockchain::block::Block;
 
 pub fn get_timestamp_now() -> u64 {
@@ -39,24 +40,33 @@ pub fn calculate_sha1(value: &String) -> Vec<u8> {
 }
 
 pub fn block_to_string(block: Block) -> String {
-    match serde_json::to_string(&block) {
-        Ok(d) => d,
-        Err(e) => {
-            error!("Unable to serialize message");
-            panic!("{}", e.to_string());
-        }
-    }
+    value_to_string::<Block>(block)
 }
 
 pub fn string_to_block(bl: String) -> Block {
-    match serde_json::from_str(&bl) {
-        Ok(d) => d,
+    string_to_value::<Block>(bl)
+}
+
+pub fn string_to_value<T: serde::de::DeserializeOwned>(value: String) -> T {
+    match serde_json::from_str(&value) {
+        Ok(data) => data,
         Err(e) => {
             error!("Unable to decode block string payload: {}", e.to_string());
             panic!("{}", e.to_string());
         }
     }
 }
+
+pub fn value_to_string<T: serde::Serialize>(value: T) -> String {
+    match serde_json::to_string(&value) {
+        Ok(serialized) => serialized,
+        Err(e) => {
+            error!("Unable to serialize value");
+            panic!("{}", e.to_string());
+        }
+    }
+}
+
 
 /// Calculates the signature of the transaction data.
 pub fn calculate_signature(data: &str) -> String {

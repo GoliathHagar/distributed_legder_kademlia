@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::ops::Index;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, mpsc, Mutex};
+use std::sync::mpsc::{Receiver, Sender};
 
 use log::{debug, error, info};
 
@@ -8,6 +9,7 @@ use crate::blockchain::block::Block;
 use crate::blockchain::blockchain::Blockchain;
 use crate::blockchain::consensus::ConsensusAlgorithm;
 use crate::blockchain::miner::Miner;
+use crate::blockchain::transaction::Transaction;
 use crate::constants::blockchain_node_type::BlockchainNodeType;
 use crate::constants::fixed_sizes::RESPONSE_TIMEOUT;
 use crate::constants::multicast_info_type::MulticastInfoType;
@@ -19,20 +21,35 @@ use crate::network::rpc::Rpc;
 #[derive(Clone, Debug)]
 pub struct BlockchainHandler {
     pub(self) blockchain: Arc<Blockchain>,
-    pub(self) kademlia: Arc<KademliaDHT>,
+    pub kademlia: Arc<KademliaDHT>,
     pub(self) node_type: BlockchainNodeType,
+    pub receiver_subscription: Arc<Mutex<Receiver<(MulticastInfoType, String)>>>,
+    pub(self) sender_subscription: Arc<Mutex<Sender<(MulticastInfoType, String)>>>,
 }
 
 impl BlockchainHandler {
     pub fn new(consensus: ConsensusAlgorithm, node: Node, node_type: BlockchainNodeType, bootstrap: Option<Node>) -> BlockchainHandler {
         let kad = Arc::new(KademliaDHT::new(node, bootstrap.clone()));
         let chain = Arc::new(Blockchain::new(consensus, node_type.clone()));
+        let (sender, receiver) = mpsc::channel();
         Self {
             blockchain: chain,
             kademlia: kad,
             node_type,
+            receiver_subscription: Arc::new(Mutex::new(receiver)),
+            sender_subscription: Arc::new(Mutex::new(sender)),
         }
     }
+
+    pub fn add_transaction_create_block(&self, transaction: Transaction) -> Option<Block> {
+        self.blockchain.clone().add_transaction(transaction);
+        self.blockchain.clone().create_block()
+    }
+
+    pub fn add_transaction_to_blockchain(self, transaction: Transaction) {
+        self.blockchain.add_transaction(transaction)
+    }
+
 
     pub fn start(self, dump_path: &str) -> std::thread::JoinHandle<()> {
         let network_thread = self.kademlia.clone().init(Some(dump_path.to_string()));
@@ -91,7 +108,6 @@ impl BlockchainHandler {
                                 }
                                 found.reverse();
                             }
-
                         } else if self.clone().node_type == BlockchainNodeType::Miner {
                             if block.is_valid() {
                                 blockchain.clone().notify_miner(id)
@@ -99,7 +115,12 @@ impl BlockchainHandler {
                                 self.clone().worker_nine(block);
                             }
                         }
-
+                    } else if payload_type == MulticastInfoType::Bid {
+                        self.sender_subscription.lock().unwrap()
+                            .send((MulticastInfoType::Bid, p)).expect("Unable to send received Bid");
+                    } else if payload_type == MulticastInfoType::Auction {
+                        self.sender_subscription.lock().unwrap()
+                            .send((MulticastInfoType::Auction, p)).expect("Unable to send received Auction");
                     }
                 }
                 _ => { continue; }

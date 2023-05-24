@@ -308,7 +308,7 @@ fn test_broadcast_nodes() {
     let t1 = contact1.init(Some("state_dumps/test-network-1.json".to_string()));
     let t2 = contact2.init(Some("state_dumps/test-network-2.json".to_string()));
 
-    let mut block = Block::new(1, "00003dca675c73c6ac10ee45c57bdf80e3137bef8d8373a4e63a613d4fde03f2".to_string(), "".to_string(), Vec::new());
+    let mut block = Block::new(1, "0000343260d0fda774e64673fb0ce7b66eb3942bfdbcd9bc24019f48cb70ba48".to_string(), "".to_string(), Vec::new());
 
     let nonce = Arc::new(Miner::new(ConsensusAlgorithm::ProofOfWork)).mine_block(block.clone());
     block.header.nonce = nonce;

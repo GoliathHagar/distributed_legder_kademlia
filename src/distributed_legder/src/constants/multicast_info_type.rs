@@ -4,5 +4,7 @@ use serde_enum_str::{Deserialize_enum_str, Serialize_enum_str};
 #[serde(rename_all = "PascalCase")]
 pub enum MulticastInfoType {
     Block,
+    Auction,
+    Bid,
     Miscellaneous,
 }

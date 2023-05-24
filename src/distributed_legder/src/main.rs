@@ -3,7 +3,7 @@ use std::thread;
 
 use log::{debug, info};
 
-use distributed_legder::auctions::auction::AuctionUI;
+use distributed_legder::auctions::auction_ui::AuctionUI;
 use distributed_legder::blockchain::blockchain_handler::BlockchainHandler;
 use distributed_legder::blockchain::consensus::ConsensusAlgorithm;
 use distributed_legder::constants::blockchain_node_type::BlockchainNodeType;
@@ -22,16 +22,17 @@ fn main() {
 
     let blockchain = BlockchainHandler::new(
         ConsensusAlgorithm::ProofOfWork,
-        node,
+        node.clone(),
         BlockchainNodeType::Bootstrap,
         None,
     );
 
-    let tb = blockchain.start("state_dumps/self.json");
+    let tb = blockchain.clone().start("state_dumps/self.json");
 
-    let aution = AuctionUI::new();
+    let aution = Arc::new(AuctionUI::new(node));
 
-    aution.main_menu();
+    //aution.init(Arc::new(blockchain.clone()));
+    aution.start(Arc::new(blockchain));
 
 
     tb.join().expect("TODO: panic message");
