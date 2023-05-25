@@ -5,7 +5,7 @@ use std::io::Write;
 use std::ops::Index;
 use std::sync::{Arc, Mutex};
 
-use log::{debug, error};
+use log::{debug, error, info};
 
 use crate::auctions::auction::Auction;
 use crate::auctions::bid::Bid;
@@ -87,6 +87,7 @@ impl AuctionUI {
 
             for auction in auctions.values() {
                 if get_timestamp_now() >= auction.get_final_ts() && !auction.bids.is_empty() {
+                    info!("Auction '{}' is close creating transaction.", auction.auction_name);
                     let mut bigger_bid: Option<Bid> = None;
 
                     for bid in &auction.bids {
@@ -106,7 +107,7 @@ impl AuctionUI {
                         }
                     }
                 } else {
-                    println!("Auction '{}' is still open.", auction.auction_name);
+                    info!("Auction '{}' is still open.", auction.auction_name);
                 }
             }
 

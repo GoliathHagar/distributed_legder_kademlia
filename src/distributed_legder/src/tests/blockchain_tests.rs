@@ -17,8 +17,6 @@ use crate::network::key::Key;
 use crate::network::node::Node;
 use crate::network::rpc::Rpc;
 
-//use crate::blockchain::blockchain::calculate_hash;
-
 #[test]
 fn test_mining_pow_block_and_validate() {
     // Create a sample block

@@ -1,19 +1,11 @@
 use std::sync::Arc;
-use std::thread;
-
-use log::{debug, info};
 
 use distributed_legder::auctions::auction_ui::AuctionUI;
 use distributed_legder::blockchain::blockchain_handler::BlockchainHandler;
 use distributed_legder::blockchain::consensus::ConsensusAlgorithm;
 use distributed_legder::constants::blockchain_node_type::BlockchainNodeType;
-use distributed_legder::constants::fixed_sizes::DUMP_STATE_TIMEOUT;
 use distributed_legder::constants::utils::get_local_ip;
-use distributed_legder::dht::kademlia::KademliaDHT;
-use distributed_legder::network::datagram::{Datagram, DatagramType};
-use distributed_legder::network::key::Key;
 use distributed_legder::network::node::Node;
-use distributed_legder::network::rpc::Rpc;
 
 fn main() {
     env_logger::init();
