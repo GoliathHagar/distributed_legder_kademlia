@@ -104,7 +104,7 @@ impl BlockchainHandler {
                                 }
                                 found.reverse();
                             }
-                        } else if self.clone().node_type == BlockchainNodeType::Miner {
+                        } else if self.clone().node_type == BlockchainNodeType::Miner || self.clone().node_type == BlockchainNodeType::Bootstrap {
                             if block.is_valid() {
                                 blockchain.clone().notify_miner(id)
                             } else {
