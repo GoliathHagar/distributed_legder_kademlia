@@ -22,6 +22,7 @@ RUST_LOG=debug RUST_LOG_STYLE=always cargo run
 ```bash
 cargo test
 ```
+
 ## Authors
 * [FabAlves95](https://github.com/FabAlves95)
 * [GoliathHagar](https://github.com/GoliathHagar)
