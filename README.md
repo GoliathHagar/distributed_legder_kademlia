@@ -14,7 +14,7 @@ cd src/distributed_ledger
 ```
 cargo run
 ```
-With details logs
+   With details logs
 ```
 RUST_LOG=debug RUST_LOG_STYLE=always cargo run
 ```
