@@ -19,9 +19,7 @@ cargo run
 cargo test
 ```
 
-## Autores /Authors :student:
-Nome/Name     | Número Mecanográfico
-------------- | -------------
-Cláudia da Costa Maia  | up201905492
-Fabiana Manuela Alves  | up201404791
-Junior Monteiro  | up202209374
+## Authors
+* [FabAlves95](https://github.com/FabAlves95)
+* [GoliathHagar](https://github.com/GoliathHagar)
+* [Lau9873](https://github.com/lau9873)
