@@ -14,12 +14,11 @@ cd src/distributed_ledger
 ```
 cargo run
 ```
-   With details logs
+4. To build and run with details logs
 ```
 RUST_LOG=debug RUST_LOG_STYLE=always cargo run
 ```
-
-4. To run tests use cargo test command;
+5. To run tests use cargo test command;
 ```
 cargo test
 ```
