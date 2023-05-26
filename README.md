@@ -8,7 +8,7 @@ ledger capable of storing auction transactions. Code written in Rust.
 1. Open a terminal;
 2. Navigate to the root directory of the assignement;
 ```
-cd distributed_ledger
+cd src/distributed_ledger
 ```
 3. To build and run the assignement, use the cargo run command;
 ```
