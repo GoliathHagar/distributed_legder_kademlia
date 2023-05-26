@@ -1,6 +1,30 @@
 {
   "blockchain": {
-    "blocks": [],
+    "blocks": [
+      {
+        "block": {
+          "header": {
+            "hash": "0000c4e38a51ce8b4a7378c08910a94647603d95af0398ad91ca2dc4993ffe74",
+            "index": 1,
+            "merkle_root": "f2575a1bd4946544839cdba9203837c3f3d7c03ee98d6e33d673b83b0febd925",
+            "nonce": 186887,
+            "previous_hash": "0000343260d0fda774e64673fb0ce7b66eb3942bfdbcd9bc24019f48cb70ba48",
+            "timestamp": 1685019364364093800,
+            "version": 1
+          },
+          "transactions": [
+            {
+              "amount": 1e19,
+              "id": "f2575a1bd4946544839cdba9203837c3f3d7c03ee98d6e33d673b83b0febd925",
+              "public_key": null,
+              "recipient": "AD295EBDB26790063C5BBC3FCE92BC448C1909C7D68855681CC5C171EA",
+              "sender": "AD295EBDB26790063C5BBC3FCE92BC448C1909C7D68855681CC5C171EA",
+              "signature": "ade6ced84b8e59bf26056637ccb7360a7fd5658fd445646bf6e7587f9d884581e4bf5aa0b18833079025d8e68825caeb4d16b66336691de3cd2a4362fe1eb409"
+            }
+          ]
+        }
+      }
+    ],
     "pendent_translations": []
   },
   "consensus_algorithm": "ProofOfWork"

@@ -7,6 +7,7 @@ Entrypoint to the network
 
 
 ### Project Structure
+File structure
 ```puml
 
 @startwbs
@@ -53,9 +54,21 @@ wbsDiagram {
 </style>
 
 + distributed-legder
+++ Auction
++++_ AutionUI
++++_ Auction
++++_ Bid
 ++ blockchain
++++_ Block
++++_ Blockchain
++++_ BlockchainHandler
++++_ Consensus
++++_ Miner
++++_ Transations
 ++ constants
 +++_ FixedSizes
++++_ BlockchainNodeType
++++_ MulticastInfoType
 +++_ Utils
 ++  dht
 +++_ Kademlia
@@ -76,8 +89,15 @@ wbsDiagram {
 
 ```
 
-
-
+System interration
+```puml
+@startmindmap
+*[#Orange] AuctionUI
+ *[#lightgreen] BlockchainHander
+  *[#FFBBCC] Blockchain
+  *[#lightblue] Kademlia
+@endmindmap
+```
 ### Diagrama de classes da rede distribuida
 
-![DHT-diagram ](diagrams/distributed-legder-structs.puml)
+![DHT-diagram](diagrams/distributed-legder-structs.puml)

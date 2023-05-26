@@ -10,14 +10,14 @@ use distributed_legder::network::node::Node;
 fn main() {
     env_logger::init();
 
-    let node = Node::new(get_local_ip(), 9876);
-    let node_boot = Node::new("192.168.43.9".to_string(), 1432);
+    let node = Node::new(get_local_ip(), 1432);
+    //let node_boot = Node::new("192.168.43.9".to_string(), 1432);
 
     let blockchain = BlockchainHandler::new(
         ConsensusAlgorithm::ProofOfWork,
         node.clone(),
-        BlockchainNodeType::Miner,
-        Some(node_boot),
+        BlockchainNodeType::Bootstrap,
+        None,
     );
 
     let tb = blockchain.clone().start("state_dumps/self.json");
