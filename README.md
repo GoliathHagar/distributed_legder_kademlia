@@ -1,4 +1,4 @@
-# Segurança de sistemas e dados 22/23 :unlock:	
+# Systems and Data Security 22/23 :unlock:	
 
 ## Assignment: Public Ledger for Auctions
 This assignment requires the implementation of a public blockchain (non-permissioned), but opposite to Bitcoin and Ethereum, the purpose here is to have a decentralized public
